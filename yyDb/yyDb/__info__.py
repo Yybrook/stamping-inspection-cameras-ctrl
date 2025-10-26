@@ -1,0 +1,5 @@
+__title__ = "yyDB"
+__version__ = "0.1"
+__author__ = "Yy"
+__url__ = ""
+__description__ = "used to operate database for MSSQL, MYSQL, SQLITE and ACCESS"

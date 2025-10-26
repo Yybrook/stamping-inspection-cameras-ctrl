@@ -1,0 +1,79 @@
+address:
+  - enable        # 0   to plc
+  - light_enable  # 1   to plc
+
+  - part_id       # 2   to plc
+  - part_count    # 3   from plc
+
+  - detect_res    # 4   to plc
+
+  - capture_distance          # 5   to plc
+  - capture_enable_method     # 6   to plc
+  - capture_enable_interval   # 7   to plc
+  - capture_enable_once       # 8   to plc
+  - capture_count             # 9   from plc
+
+  - part_exist                # 10  from plc
+
+  - part_on_daysSinceEpoch_high     # 11  from plc
+  - part_on_daysSinceEpoch_low
+  - part_on_millisecondsEpoch_high
+  - part_on_millisecondsEpoch_low
+
+  - part_off_daysSinceEpoch_high    # 15
+  - part_off_daysSinceEpoch_low
+  - part_off_millisecondsEpoch_high
+  - part_off_millisecondsEpoch_low
+
+  - capture_0_daysSinceEpoch_high   # 19
+  - capture_0_daysSinceEpoch_low
+  - capture_0_millisecondsEpoch_high
+  - capture_0_millisecondsEpoch_low
+
+  - capture_1_daysSinceEpoch_high   # 23
+  - capture_1_daysSinceEpoch_low
+  - capture_1_millisecondsEpoch_high
+  - capture_1_millisecondsEpoch_low
+
+  - capture_2_daysSinceEpoch_high   # 27
+  - capture_2_daysSinceEpoch_low
+  - capture_2_millisecondsEpoch_high
+  - capture_2_millisecondsEpoch_low
+
+  - capture_3_daysSinceEpoch_high   # 31
+  - capture_3_daysSinceEpoch_low
+  - capture_3_millisecondsEpoch_high
+  - capture_3_millisecondsEpoch_low
+
+  - capture_4_daysSinceEpoch_high   # 35
+  - capture_4_daysSinceEpoch_low
+  - capture_4_millisecondsEpoch_high
+  - capture_4_millisecondsEpoch_low
+
+  - capture_5_daysSinceEpoch_high   # 39
+  - capture_5_daysSinceEpoch_low
+  - capture_5_millisecondsEpoch_high
+  - capture_5_millisecondsEpoch_low
+
+  - capture_6_daysSinceEpoch_high   # 43
+  - capture_6_daysSinceEpoch_low
+  - capture_6_millisecondsEpoch_high
+  - capture_6_millisecondsEpoch_low
+
+  - capture_7_daysSinceEpoch_high   # 47
+  - capture_7_daysSinceEpoch_low
+  - capture_7_millisecondsEpoch_high
+  - capture_7_millisecondsEpoch_low
+
+  - capture_8_daysSinceEpoch_high   # 51
+  - capture_8_daysSinceEpoch_low
+  - capture_8_millisecondsEpoch_high
+  - capture_8_millisecondsEpoch_low
+
+  - capture_9_daysSinceEpoch_high   # 55
+  - capture_9_daysSinceEpoch_low
+  - capture_9_millisecondsEpoch_high
+  - capture_9_millisecondsEpoch_low
+
+  - capture_enable                # 59  from plc
+  - encoder_remainder             # 60 from plc

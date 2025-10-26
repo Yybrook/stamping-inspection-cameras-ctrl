@@ -1,0 +1,40 @@
+global:
+  native:
+    AcquisitionFrameRateEnable: False
+    TriggerMode: "On"
+    TriggerSource: "Software"
+    ExposureAuto: "Off"
+    ExposureTime: 5000
+    GainAuto: "Off"
+    Gain: 0
+    GevSCPD: 400
+  custom:
+    to_ping: True  # 是否ping
+    host_ip: null     # host ip
+    multicast_ip: null    # 组播 ip
+    multicast_port: null  # 组播断端口
+    create_handle_method: 0 # 枚举 0 -> 无枚举连接相机, 1 -> 枚举相机
+    grab_method: 3    # 取流方法, 1 -> MV_CC_GetOneFrameTimeout, 2 -> MV_CC_GetImageBuffer, 3 -> MV_CC_RegisterImageCallBackEx
+    access_mode: 1    # 相机访问权限M V_ACCESS_Exclusive -> 1, MV_ACCESS_Control -> 3, MV_ACCESS_Monitor -> 7
+    resize_ratio: 1         # resize
+    rotation: 3         # 旋转标记, 3 -> 不旋转, 0 -> 顺时针90度, 1 -> 顺时针180度, 2 -> 逆时针90度
+    get_one_frame_timeout_ms: 1000     # 取流超时时间
+
+
+192.168.4.101:
+  native:
+
+  custom:
+
+
+192.168.4.102:
+  native:
+
+  custom:
+
+
+192.168.4.105:
+  native:
+
+  custom:
+

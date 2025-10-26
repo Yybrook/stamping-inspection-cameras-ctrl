@@ -1,0 +1,64 @@
+2025-10-25 07:21:10,441 - __main__ - ERROR - [Main] press reader error: Error 22 connecting to 127.0.0.1:6379. 远程计算机拒绝网络连接。.
+Traceback (most recent call last):
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\.venv\Lib\site-packages\redis\asyncio\connection.py", line 305, in connect_check_health
+    await self.retry.call_with_retry(
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\.venv\Lib\site-packages\redis\asyncio\retry.py", line 50, in call_with_retry
+    return await do()
+           ^^^^^^^^^^
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\.venv\Lib\site-packages\redis\asyncio\connection.py", line 760, in _connect
+    reader, writer = await asyncio.open_connection(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yy\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\streams.py", line 48, in open_connection
+    transport, _ = await loop.create_connection(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yy\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\base_events.py", line 1132, in create_connection
+    raise exceptions[0]
+  File "C:\Users\yy\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\base_events.py", line 1107, in create_connection
+    sock = await self._connect_sock(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yy\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\base_events.py", line 1010, in _connect_sock
+    await self.sock_connect(sock, address)
+  File "C:\Users\yy\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\proactor_events.py", line 729, in sock_connect
+    return await self._proactor.connect(sock, address)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yy\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\windows_events.py", line 803, in _poll
+    value = callback(transferred, key, ov)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yy\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\windows_events.py", line 599, in finish_connect
+    ov.getresult()
+ConnectionRefusedError: [WinError 1225] 远程计算机拒绝网络连接。
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\app\readerForPress\main.py", line 103, in <module>
+    asyncio.run(main())
+  File "C:\Users\yy\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\yy\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yy\AppData\Roaming\uv\python\cpython-3.12.11-windows-x86_64-none\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\app\readerForPress\main.py", line 41, in main
+    async with await PressInfo.create(press_line=press_line, executor=executor,  **redis_con) as press_info:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\press\press_info.py", line 63, in create
+    press_info.redis = await AsyncRedisDB.create(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\redisDb\async_redis_db.py", line 74, in create
+    await instance.ping()
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\.venv\Lib\site-packages\redis\asyncio\client.py", line 672, in execute_command
+    conn = self.connection or await pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\.venv\Lib\site-packages\redis\asyncio\connection.py", line 1149, in get_connection
+    await self.ensure_connection(connection)
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\.venv\Lib\site-packages\redis\asyncio\connection.py", line 1182, in ensure_connection
+    await connection.connect()
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\.venv\Lib\site-packages\redis\asyncio\connection.py", line 296, in connect
+    await self.connect_check_health(check_health=True)
+  File "C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\.venv\Lib\site-packages\redis\asyncio\connection.py", line 315, in connect_check_health
+    raise ConnectionError(self._error_message(e))
+redis.exceptions.ConnectionError: Error 22 connecting to 127.0.0.1:6379. 远程计算机拒绝网络连接。.

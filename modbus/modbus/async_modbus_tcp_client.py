@@ -31,12 +31,12 @@ class MyAsyncModbusTCPClient(AsyncModbusTcpClient):
         res = await super().connect()
         if not res:
             raise OSError(f"connect to {self.server_address} error")
-        # _logger.info(f"{self.identity} connect to host[{self.comm_params.host}], port[{self.comm_params.port}], slave[{self.slave}] successfully")
+        _logger.debug(f"{self.identity} connect to ({self.comm_params.host}:{self.comm_params.port}) successfully")
         return res
 
     def close(self):
         super().close()
-        # _logger.info(f"{self.identity} disconnect from host[{self.comm_params.host}], port[{self.comm_params.port}], slave[{self.slave}] successfully")
+        _logger.debug(f"{self.identity} disconnect from ({self.comm_params.host}:{self.comm_params.port}) successfully")
 
     async def __aenter__(self):
         await super().__aenter__()
@@ -66,9 +66,9 @@ class MyAsyncModbusTCPClient(AsyncModbusTcpClient):
 
         if err_addr:
             error_details = "\n".join(f"  Addr {addr}: {err}" for addr, err in err_addr.items())
-            raise Exception(f"write holding registers for slave[{self.slave}] error: \n{error_details}")
+            raise Exception(f"write holding registers error: \n{error_details}")
 
-        _logger.info(f"{self.identity} write {registers} successfully")
+        _logger.debug(f"{self.identity} write {registers} successfully")
 
     async def read(self, addr: int, count: int) -> dict:
         """
@@ -79,12 +79,12 @@ class MyAsyncModbusTCPClient(AsyncModbusTcpClient):
         """
         response = await self.read_holding_registers(addr, count=count, device_id=self.slave)
         if response.isError():
-            raise Exception(f"read holding registers[{addr} - {addr + count - 1}] for slave={self.slave} error: \n{response}")
+            raise Exception(f"read holding registers[{addr} - {addr + count - 1}] error: \n{response}")
 
         res = {addr + i: val for i, val in enumerate(response.registers)}
-        _logger.debug(f"{self.identity} read({addr}, {count}) = {res}")
+        _logger.debug(f"{self.identity} read({addr},{count})={res}")
         return res
 
     @property
     def identity(self):
-        return f"[ModbusTCPClient]"
+        return f"Modbus[TCPClient]"

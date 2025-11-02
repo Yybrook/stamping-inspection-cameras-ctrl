@@ -48,7 +48,7 @@ class AsyncPLCOperator(PLCOperator):
         # 返回 False 以便异常继续抛出
         return False
 
-    async def read_multi_vars(self, var_dict: dict) -> dict:
+    async def read_multi_vars(self, var_dict: typing.Optional[dict]=None) -> dict:
         """
         批量读取 PLC 中的多个变量
         参数:
@@ -78,6 +78,3 @@ class AsyncPLCOperator(PLCOperator):
         '''
         func = partial(super().read_multi_vars, var_dict)
         return await self.loop.run_in_executor(self.executor, func)
-
-    async def read_multi(self) -> dict:
-        return await self.read_multi_vars(self.multi_vars)

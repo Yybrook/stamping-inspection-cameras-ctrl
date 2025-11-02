@@ -55,7 +55,7 @@ class PressInfo:
         self.loop = asyncio.get_running_loop()
 
     @classmethod
-    async def create(cls, press_line, redis_host, redis_port, redis_db, executor = None) -> typing.Self:
+    async def create(cls, press_line, redis_host, redis_port, redis_db, executor: typing.Optional[ThreadPoolExecutor] = None) -> typing.Self:
         # 实例化
         press_info = cls(press_line, redis_host, redis_port, redis_db, executor)
 
@@ -94,6 +94,7 @@ class PressInfo:
 
     def work(self):
         self.scheduler.start()
+        _logger.info(f"{self.identity} work() started")
 
     async def cleanup(self):
         # wait=False → 立即返回，不阻塞主线程
@@ -103,10 +104,9 @@ class PressInfo:
 
         self.scheduler.shutdown()
 
-        if self.redis:
-            await self.redis.del_program_id(press_line=self.press_line)
-            await self.redis.del_running_status(press_line=self.press_line)
-            await self.redis.aclose()
+        await self.redis.del_program_id(press_line=self.press_line)
+        await self.redis.del_running_status(press_line=self.press_line)
+        await self.redis.aclose()
 
     async def __aenter__(self):
         return self
@@ -157,6 +157,7 @@ class PressInfo:
             # 初始化 generator，进入 yield 状态
             next(gen)
             while True:
+                # 读取灯信号
                 light = reader.read_running_light()
                 try:
                     gen.send(light)
@@ -168,4 +169,4 @@ class PressInfo:
 
     @property
     def identity(self):
-        return f"[PressInfo|{self.press_line}]"
+        return f"PressInfo[{self.press_line}]"

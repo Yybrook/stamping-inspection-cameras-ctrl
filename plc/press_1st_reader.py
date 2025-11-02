@@ -27,7 +27,7 @@ class Press1stReader(PLCOperator):
     def read_running_light(self) -> bool:
         data = self.client.read_area(snap7.type.Area.PA, 0, 255, 1)
         light = snap7.util.get_bool(data, 0, 7)
-        _logger.debug(f"{self.identity} read_running_light() = {light}")
+        _logger.debug(f"{self.identity} read_running_light()={light}")
         return light
 
     @property

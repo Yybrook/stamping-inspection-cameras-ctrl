@@ -1,2 +1,2 @@
-from .udpMulticast.sync_udp_multicast_client import SyncUdpMulticastClient
-from .udpMulticast.async_udp_multicast_server import AsyncUdpMulticastServer
+from udpMulticast.sync_udp_multicast_client import SyncUdpMulticastClient
+from udpMulticast.async_udp_multicast_server import AsyncUdpMulticastServer

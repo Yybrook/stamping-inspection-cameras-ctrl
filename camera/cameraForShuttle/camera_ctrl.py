@@ -2,6 +2,7 @@ import asyncio
 import yaml
 import os
 import typing
+import json
 from concurrent.futures import ThreadPoolExecutor
 import logging
 
@@ -16,9 +17,11 @@ _logger = logging.getLogger(__name__)
 
 # 软触发延时时间
 DEFAULT_TRIGGER_DELAY_SEC = 0.5
-LIGHT_DISABLE_AFTER_PRESS_STOP = 600
+LIGHT_DISABLE_AFTER_PRESS_STOP_S = 600
 
 MAX_WORKERS = 50
+
+CAMERA_LOCATION = "shuttle"
 
 
 class CameraCtrl:
@@ -77,6 +80,9 @@ class CameraCtrl:
         self.stop_event = stop_event or asyncio.Event()
         self._own_stop_event = stop_event is None
 
+        # 当前循环
+        self.loop = asyncio.get_running_loop()
+
         self.tasks = list()
 
     @classmethod
@@ -96,9 +102,11 @@ class CameraCtrl:
             press_line=press_line,
             redis_host=redis_host, redis_port=redis_port, redis_db=redis_db,
             rabbitmq_url=rabbitmq_url,
-            modbus_host=modbus_host, modbus_prt=modbus_port, modbus_slave=modbus_slave,
+            modbus_host=modbus_host, modbus_port=modbus_port, modbus_slave=modbus_slave,
             **kwargs
         )
+
+        # redis
         ctrl.redis = await AsyncRedisDB.create(
                 host=ctrl.redis_host,
                 port=ctrl.redis_port,
@@ -106,10 +114,10 @@ class CameraCtrl:
                 ping=True,
             )
 
-        # rabbit mq
+        # rabbitmq
         ctrl.rabbitmq_producer = RabbitmqCameraProducer(
             rabbitmq_url=ctrl.rabbitmq_url,
-            location = "shuttle"
+            location=CAMERA_LOCATION
         )
         await ctrl.rabbitmq_producer.connect()
 
@@ -137,11 +145,23 @@ class CameraCtrl:
         return False
 
     async def cleanup(self):
-        if self._own_stop_event:
-            self.stop_event.set()
+        # if self._own_stop_event:
+        self.stop_event.set()
 
+        # 关灯
+        async with CameraCtrlModbusClient(
+                host=self.modbus_host,
+                port=self.modbus_port,
+                slave=self.modbus_slave
+        ) as client:
+            await client.write(registers={"light_enable": False})
+
+        # 关闭 rabbitmq
         await self.rabbitmq_producer.close()
 
+        # 关闭 redis
+        await self.redis.del_part_counter(press_line=self.press_line)
+        await self.redis.set_light_disable(press_line=self.press_line, after=None)
         await self.redis.aclose()
 
         if self._own_executor:
@@ -179,32 +199,42 @@ class CameraCtrl:
 
                     # 读取 part_count
                     part_counter = await plc.read_part_counter()
-                    # part_count 设置 bias
-                    part_counter = PartCounter.on_shuttle(count=part_counter)
-
-                    _logger.info(f"{self.identity} shuttle has part, counter[{part_counter}], interval[{self.shuttle.interval}]")
 
                     # 软触发
-                    await self.delay_2_TriggerSoftware(value=has_part_t)
+                    self.delay_2_TriggerSoftware(value=has_part_t)
 
+                    # part_count 设置 bias
+                    part_counter = PartCounter.on_shuttle(counter=part_counter)
                     # 发布 part_count
                     await self.redis.set_part_counter(part_counter=part_counter, press_line=self.press_line)
 
+                    _logger.info(f"{self.identity} shuttle has part[counter={part_counter},interval={self.shuttle.interval}]")
+
                 except Exception as err:
-                    _logger.exception(f"{self.identity} shuttle detect error: {err}")
+                    _logger.exception(f"{self.identity} shuttle_detect() error: {err}")
 
-            _logger.info(f"{self.identity} shuttle detect ended")
+            _logger.info(f"{self.identity} shuttle_detect() ended")
 
-    async def message_all_cameras(self, cmds):
+    async def message_all_cameras(self, data: str):
         # 获取运行的相机ip
         camera_ips = await self.redis.get_running_cameras(press_line=self.press_line)
         # 给所有运行的相机 发送信息
-        await self.rabbitmq_producer.publish_cmd(camera_ips=camera_ips, cmds=cmds)
+        await self.rabbitmq_producer.publish(camera_ips=camera_ips, data=data)
 
-    async def delay_2_TriggerSoftware(self, value):
+    def delay_2_TriggerSoftware(self, value):
         cmds = (("set", "TriggerSoftware", value),)
-        await asyncio.sleep(self.trigger_delay)
-        await self.message_all_cameras(cmds=cmds)
+        # 转为 json 字符串
+        data = json.dumps(cmds)
+
+        # 方法1
+        # 延时发送消息
+        self.loop.call_later(self.trigger_delay, lambda: asyncio.create_task(self.message_all_cameras(data=data)))
+
+        # # 方法2
+        # # 延时发送消息
+        # if self.trigger_delay:
+        #     await asyncio.sleep(self.trigger_delay)
+        # await self.message_all_cameras(data=data)
 
     # #################### 监控program id -> 打开/关闭相机 ####################
     async def subscribe_program_id(self):
@@ -237,12 +267,12 @@ class CameraCtrl:
                     # 要打开的相机
                     to_open_camera_ips = (required_camera_ips - running_camera_ips) & self._registered_cameras
 
-                    # 打开相机
-                    if to_open_camera_ips:
-                        await self.rabbitmq_producer.publish_cmd(camera_ips=list(to_open_camera_ips), cmds=(("open",),))
                     # 关闭相机
                     if to_close_camera_ips:
-                        await self.rabbitmq_producer.publish_cmd(camera_ips=list(to_close_camera_ips), cmds=(("close",),))
+                        await self.rabbitmq_producer.publish(camera_ips=list(to_close_camera_ips), data=json.dumps((("close",),)))
+                    # 打开相机
+                    if to_open_camera_ips:
+                        await self.rabbitmq_producer.publish(camera_ips=list(to_open_camera_ips), data=json.dumps((("open",),)))
 
                     # todo 确认相机关闭
                     # await asyncio.sleep(10)
@@ -251,7 +281,7 @@ class CameraCtrl:
                 except Exception as err:
                     _logger.exception(f"{self.identity} handle program id error: {err}")
 
-        _logger.info(f"{self.identity} subscribe program id ended")
+        _logger.info(f"{self.identity} subscribe_program_id() ended")
 
     # #################### 监控running status -> 开灯, 延时关灯 ####################
     async def subscribe_running_status(self):
@@ -272,12 +302,12 @@ class CameraCtrl:
                    await self.redis.set_light_enable(press_line=self.press_line, disable_after=None)
                 # 无 running_status or 压机停机 -> 10分钟后关灯
                 else:
-                    await self.redis.set_light_disable(press_line=self.press_line, after=LIGHT_DISABLE_AFTER_PRESS_STOP)
+                    await self.redis.set_light_disable(press_line=self.press_line, after=LIGHT_DISABLE_AFTER_PRESS_STOP_S)
 
             except Exception as err:
                 _logger.exception(f"{self.identity} handle running status error: {err}")
 
-        _logger.info(f"{self.identity} subscribe running status ended")
+        _logger.info(f"{self.identity} subscribe_running_status() ended")
 
     # #################### 监控相机数量 -> 开/关灯 ####################
     async def light_control(self):
@@ -290,21 +320,21 @@ class CameraCtrl:
                 light_enable = await self.redis.get_light_enable(press_line=self.press_line)
                 if self.light_enable != light_enable:
                     self.light_enable = light_enable
-                    _logger.info(f"{self.identity} light enable = {self.light_enable}")
+                    _logger.info(f"{self.identity} light enable={self.light_enable}")
 
                     async with CameraCtrlModbusClient(
                             host=self.modbus_host,
                             port=self.modbus_port,
                             slave=self.modbus_slave
                     ) as client:
-                        client.write(registers={"light_enable": self.light_enable})
+                        await client.write(registers={"light_enable": self.light_enable})
 
                 await asyncio.sleep(1)
 
             except Exception as err:
                 _logger.exception(f"{self.identity} light control error: {err}")
 
-        _logger.info(f"{self.identity} light control ended")
+        _logger.info(f"{self.identity} light_control() ended")
 
     @classmethod
     def load_cameras_and_parts(cls, path: typing.Optional[str] = None) -> tuple[set, dict]:
@@ -332,4 +362,4 @@ class CameraCtrl:
 
     @property
     def identity(self):
-        return f"[CameraCtrl|Shuttle]"
+        return f"CameraCtrl[Shuttle]"

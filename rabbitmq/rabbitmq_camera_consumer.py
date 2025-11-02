@@ -1,5 +1,5 @@
+import asyncio
 import aio_pika
-import json
 import typing
 import logging
 
@@ -18,8 +18,8 @@ class RabbitmqCameraConsumer:
         self.location = location if location is not None else ""
 
         self.exchange_name = f"{self.location}.camera.ctrl"
-        self.response_queue_name = f"{self.location}.camera.response"
-        self.broadcast_routing_key = f"{self.location}.broadcast"
+        # self.response_queue_name = f"{self.location}.camera.response"
+        self.broadcast_routing_key = f"{self.location}.camera.broadcast"
 
     @property
     def p2p_routing_key(self) -> str:
@@ -43,82 +43,108 @@ class RabbitmqCameraConsumer:
             await self.queue.bind(self.exchange, routing_key=self.p2p_routing_key)
             await self.queue.bind(self.exchange, routing_key=self.broadcast_routing_key)
 
-            _logger.info(f"{self.identity} connected rabbit mq successfully")
+            _logger.info(f"{self.identity} connected successfully")
 
     async def close(self):
         if self.connection:
             await self.connection.close()
             self.connection = None
-            _logger.info(f"{self.identity} disconnected rabbit mq successfully")
+            _logger.info(f"{self.identity} disconnected successfully")
 
     async def listener(self):
-        async with self.queue.iterator() as it:
-            async for message in it:
-                async with message.process():
-                    try:
-                        # data -> ((open), (trigger, has_part_t), (close))
-                        data = json.loads(message.body)
-                        _logger.debug(f"{self.identity} receive from rabbitmq: {data}")
+        # 连接 rabbitmq
+        await self.connect()
 
-                        # 接受响应
-                        response_msg = yield data
+        try:
+            # 监听队列
+            async with self.queue.iterator() as q:
+                async for message in q:
+                    async with message.process():
+                        try:
+                            # data -> ((open), (trigger, has_part_t), (close))
+                            data = message.body.decode()
+                            _logger.debug(f"{self.identity} received: {data}")
 
-                        # 发送响应
-                        if message.reply_to:
-                            msg = aio_pika.Message(
-                                body=json.dumps(response_msg).encode(),
-                            )
-                            await self.channel.default_exchange.publish(
-                                message=msg,
-                                routing_key=message.reply_to
-                            )
+                            # 接受响应
+                            response = yield data
 
-                    except Exception as err:
-                        _logger.exception(f"{self.identity} listen from rabbitmq error: {err}")
+                            # 发送响应
+                            if response and message.reply_to:
+                                _logger.debug(f"{self.identity} reply to: {response}")
+                                msg = aio_pika.Message(
+                                    body=response.encode(),
+                                )
+                                await self.channel.default_exchange.publish(
+                                    message=msg,
+                                    routing_key=message.reply_to
+                                )
+                        except Exception as err:
+                            _logger.exception(f"{self.identity} listen from rabbitmq error: {err}")
+        except asyncio.CancelledError:
+            raise
+        finally:
+            _logger.debug(f"{self.identity} listener ended")
 
     @property
     def identity(self):
-        return f"RabbitMQ[CameraCtrlConsumer]"
+        return f"Rabbitmq[CameraCtrlConsumer]"
 
 if __name__ == "__main__":
-    import asyncio
     import argparse
+    import json
 
     def init_logger():
         # 创建logger对象
         logger = logging.getLogger()
         # 设置全局最低等级（让所有handler能接收到）
         logger.setLevel(logging.DEBUG)
-
-        # === 控制台 Handler（只显示 WARNING 及以上） ===
+        # 控制台 Handler
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
+        console_handler.setLevel(logging.DEBUG)
         console_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         console_handler.setFormatter(console_formatter)
         # 添加 handler 到 logger
         logger.addHandler(console_handler)
 
-    async def main(rabbit_url, ip):
-        c = RabbitmqCameraConsumer(rabbit_url, ip)
-        try:
-            await c.connect()
-            async for message in c.listener():
-                async with message.process():
-                    try:
-                        data = json.loads(message.body)
-                        print("📩 收到响应:", data)
-                        response = list()
-                        for d in data:
-                            response.append([*d, "ok"])
-                        response_msg = {"ip": ip, "res": response}
-                        await c.response(response_msg, message)
-                    except Exception as err:
-                        print("执行失败:", err)
+        logging.getLogger('asyncio').setLevel(logging.INFO)
+        logging.getLogger('aiormq.connection').setLevel(logging.INFO)
+        logging.getLogger('aio_pika.robust_connection').setLevel(logging.INFO)
+        logging.getLogger('aio_pika.connection').setLevel(logging.INFO)
+        logging.getLogger('aio_pika.channel').setLevel(logging.INFO)
+        logging.getLogger('aio_pika.queue').setLevel(logging.INFO)
+        logging.getLogger('aio_pika.exchange').setLevel(logging.INFO)
 
-        except KeyboardInterrupt:
-            print("\n KeyboardInterrupt")
+    async def main(rabbit_url, ip):
+        mq = RabbitmqCameraConsumer(rabbit_url, ip)
+        try:
+            # 获取异步生成器对象
+            agen = mq.listener()
+            response = None
+            while True:
+                try:
+                    data = await agen.asend(response)
+                    # 解析json
+                    data = json.loads(data)
+                    # print(f"收到消息: {data}")
+                    # 响应
+                    response = [[*d, "ok"] for d in data]
+                    response = {"ip": ip, "res": response}
+                    # 转为json
+                    response = json.dumps(response)
+                    # print(f"生成响应: {response}")
+                except StopAsyncIteration as err:
+                    print(f"StopIteration: {err}")
+                    break
+                except Exception as err:
+                    print(f"解析消息错误: {err}")
+
+        except (KeyboardInterrupt, asyncio.CancelledError):
+            print("中断")
+        except Exception as err:
+            print(f"错误: {err}")
         finally:
-            await c.close()
+            await mq.close()
+            print("退出")
 
 
     url = "amqp://admin:123@localhost/"

@@ -2,47 +2,63 @@ import logging
 import time
 from plc import PLCOperator, Press1stReader, PressHeadReader, PressTailReader
 
-if __name__ == "__main__":
-    # 配置日志系统
-    logging.basicConfig(
-        level=logging.DEBUG,  # 设置全局日志级别
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.StreamHandler(),  # 输出到控制台
-            # logging.FileHandler("app.log", mode="w", encoding="utf-8")  # 输出到文件
-        ]
-    )
 
-    with PLCOperator(ip="10.108.7.1", model="S7-300") as plc:
-        print("is_connected: ", plc.is_connected())
+def init_logger():
+    # 创建logger对象
+    logger = logging.getLogger()
+    # 设置全局最低等级（让所有handler能接收到）
+    logger.setLevel(logging.DEBUG)
+    # 控制台 Handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    console_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    console_handler.setFormatter(console_formatter)
+    # 添加 handler 到 logger
+    logger.addHandler(console_handler)
 
-    with Press1stReader() as plc:
-        try:
+    # logging.getLogger('asyncio').setLevel(logging.INFO)
+    # logging.getLogger('snap7.client').setLevel(logging.INFO)
+
+
+async def main():
+    try:
+        with PLCOperator(ip="10.108.7.1", model="S7-300") as plc:
+            print(f"is connected={plc.is_connected()}")
+
+        with Press1stReader() as plc:
             pre_s = False
-            pre_t = time.time()
+            start_t = pre_t = time.time()
             while True:
-                # print(plc.read_multi())
                 s = plc.read_running_light()
+                cur_t = time.time()
                 if pre_s != s:
-                    t = time.time()
-                    dur = (t - pre_t) * 1000
-                    pre_t = t
+                    dur_t = (cur_t - pre_t) * 1000
+                    pre_t = cur_t
                     pre_s = s
-                    print(s, dur)
-        except KeyboardInterrupt:
-            pass
+                    print(f"running light={s}, duration={dur_t}")
+                if cur_t - start_t >= 10:
+                    break
 
-    with PressHeadReader() as plc:
-        print(plc.read_multi())
+        with PressHeadReader(executor=None) as plc:
+            print(f"multi vars=\n{await plc.read_multi_vars()}")
 
-    with PressTailReader(None) as reader:
-        try:
-            pre_t = time.time()
+        with PressTailReader(executor=None) as reader:
+            start_t = pre_t = time.time()
             while True:
-                s1, s2 = reader.read_shuttle_sensors()
-                t = time.time()
-                dur = (t - pre_t) * 1000
-                pre_t = t
-                print(s1, s2, dur)
-        except KeyboardInterrupt:
-            pass
+                s1, s2 = await reader.read_shuttle_sensors()
+                cur_t = time.time()
+                dur_t = (cur_t - pre_t) * 1000
+                pre_t = cur_t
+                print(f"s1={s1}, s2={s2}, duration={dur_t}")
+                if cur_t - start_t >= 10:
+                    break
+
+    except KeyboardInterrupt:
+        pass
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    init_logger()
+    asyncio.run(main())

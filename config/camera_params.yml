@@ -13,7 +13,7 @@ global:
     host_ip: null     # host ip
     multicast_ip: null    # 组播 ip
     multicast_port: null  # 组播断端口
-    create_handle_method: 0 # 枚举 0 -> 无枚举连接相机, 1 -> 枚举相机
+    create_handle_method: 0 # 枚举 0 -> 直连相机, 1 -> 枚举相机
     grab_method: 3    # 取流方法, 1 -> MV_CC_GetOneFrameTimeout, 2 -> MV_CC_GetImageBuffer, 3 -> MV_CC_RegisterImageCallBackEx
     access_mode: 1    # 相机访问权限M V_ACCESS_Exclusive -> 1, MV_ACCESS_Control -> 3, MV_ACCESS_Monitor -> 7
     resize_ratio: 1         # resize
@@ -25,16 +25,53 @@ global:
   native:
 
   custom:
-
+    host_ip: 192.168.4.223
 
 192.168.4.102:
   native:
 
   custom:
-
+    host_ip: 192.168.4.223
 
 192.168.4.105:
   native:
 
   custom:
+    host_ip: 192.168.4.222
+
+192.168.4.111:
+  native:
+
+  custom:
+    host_ip: 192.168.4.223
+
+192.168.4.112:
+  native:
+
+  custom:
+    host_ip: 192.168.4.222
+
+192.168.4.113:
+  native:
+
+  custom:
+    host_ip: 192.168.4.222
+
+192.168.4.114:
+  native:
+
+  custom:
+    host_ip: 192.168.4.223
+
+192.168.4.115:
+  native:
+
+  custom:
+    host_ip: 192.168.4.222
+
+192.168.4.116:
+  native:
+
+  custom:
+    host_ip: 192.168.4.222
 

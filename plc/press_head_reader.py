@@ -1,5 +1,6 @@
 import snap7
 from .plc.async_plc_operator import AsyncPLCOperator, _logger
+from utils import async_run_in_executor
 
 
 PLC_IP = "10.108.9.1"
@@ -24,14 +25,12 @@ class PressHeadReader(AsyncPLCOperator):
             },
         }
 
-    def _read_program_id(self) -> int:
+    @async_run_in_executor
+    def read_program_id(self) -> int:
         data = self.client.read_area(snap7.type.Area.DB, 61, 2, 2)
         program_id = snap7.util.get_word(data, 0)
-        _logger.debug(f"{self.identity} read_program_id() = {program_id}")
+        _logger.debug(f"{self.identity} read_program_id()={program_id}")
         return int(program_id)
-
-    async def read_program_id(self) -> int:
-        return await self.loop.run_in_executor(self.executor, self._read_program_id)
 
     @property
     def identity(self):

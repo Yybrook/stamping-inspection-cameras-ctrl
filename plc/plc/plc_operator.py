@@ -71,7 +71,7 @@ class PLCOperator:
     def is_connected(self) -> bool:
         return self.client.get_connected()
 
-    def read_multi_vars(self, var_dict: dict) -> dict:
+    def read_multi_vars(self, var_dict: typing.Optional[dict]=None) -> dict:
         """
         批量读取 PLC 中的多个变量
         参数:
@@ -99,6 +99,9 @@ class PLCOperator:
                CT      -> 0x1C
                TM      -> 0x1D
         '''
+
+        if not var_dict:
+            var_dict = self.multi_vars
 
         items = list()
         buffers = list()
@@ -137,9 +140,9 @@ class PLCOperator:
 
         values = dict()
         for (name, cfg), item in zip(var_dict.items(), c_items):
-            _logger.debug(f"{self.identity} {name} item: {item}")
+            _logger.debug(f"{self.identity} item[{name}]={item}")
             if item.Result != 0:
-                _logger.error(f"{self.identity} {name} error: {parse_s7_result(item.Result)}")
+                _logger.error(f"{self.identity} item[{name}] error: {parse_s7_result(item.Result)}")
                 values[name] = None
             else:
                 datatype = cfg['datatype']
@@ -168,14 +171,11 @@ class PLCOperator:
                         array.append(val)
                     values[name] = array
 
-        _logger.debug(f"{self.identity} read_multi_vars() = {values}")
+        _logger.debug(f"{self.identity} read_multi_vars()={values}")
 
         return values
 
-    def read_multi(self) -> dict:
-        return self.read_multi_vars(self.multi_vars)
-
-    def set_multi(self, multi_vars: dict):
+    def set_multi_vars(self, multi_vars: dict):
         self.multi_vars = multi_vars
 
     @property

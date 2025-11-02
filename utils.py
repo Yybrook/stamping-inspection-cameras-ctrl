@@ -7,9 +7,13 @@ import functools
 import platform
 import numpy as np
 import cv2
+import logging
+
 # import subprocess
 # import shutil
 # import socket
+
+_logger = logging.getLogger(__name__)
 
 
 def is_win() -> bool:
@@ -83,7 +87,7 @@ class CallContext(typing.NamedTuple):
 class ForeverAsyncWorker:
     def __init__(
             self,
-            executor,
+            executor: typing.Optional[ThreadPoolExecutor],
             max_workers: int = 10,
             task_error_callback: typing.Optional[typing.Callable[[str, BaseException], None]] = None,
             task_success_callback: typing.Optional[typing.Callable[[str, typing.Any], None]] = None,
@@ -113,10 +117,12 @@ class ForeverAsyncWorker:
         # 将当前线程的事件循环设置为创建的事件循环
         asyncio.set_event_loop(self.loop)
         try:
+            _logger.debug(f"{self.identity} start running")
             self.loop.run_forever()
         finally:
             self.loop.run_until_complete(self._shutdown_async())
             self.loop.close()
+            _logger.debug(f"{self.identity} stop running")
 
     async def _shutdown_async(self):
         """关闭异步生成器和默认执行器"""
@@ -125,17 +131,25 @@ class ForeverAsyncWorker:
 
     def run_async(self, coro):
         """在线程安全地调度异步任务"""
-        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
+        if not asyncio.iscoroutine(coro):
+            raise TypeError(f"{self.identity} run_async() expects coroutine, got {type(coro)}")
 
-        coro_name = getattr(coro, "__name__", str(coro))
+        if not self.loop.is_running():
+            raise RuntimeError(f"{self.identity} event loop not running")
+
+        coro_name = getattr(coro, "__name__", coro.__class__.__name__)
+
+        future = asyncio.run_coroutine_threadsafe(coro, self.loop)
 
         def _done(f):
             try:
                 result = f.result()
             except Exception as exc:
+                _logger.exception(f"{self.identity} {coro_name}() run error: {exc}")
                 if self.task_error_callback:
                     self.task_error_callback(coro_name, exc)
             else:
+                _logger.debug(f"{self.identity} {coro_name}() run successfully")
                 if self.task_success_callback:
                     self.task_success_callback(coro_name, result)
 
@@ -152,9 +166,12 @@ class ForeverAsyncWorker:
         try:
             self.loop_thread.result(timeout=timeout)
         except TimeoutError:
+            _logger.debug(f"{self.identity} force to stop loop")
             for task in asyncio.all_tasks(self.loop):
                 task.cancel()
             self.loop.call_soon_threadsafe(self.loop.stop)
+        finally:
+            _logger.debug(f"{self.identity} stop loop successfully")
 
     def __enter__(self):
         """进入上下文时自动启动事件循环"""
@@ -167,6 +184,10 @@ class ForeverAsyncWorker:
             self.executor.shutdown()
         # 不抑制异常
         return False
+
+    @property
+    def identity(self):
+        return f"[ForeverAsyncWorker]"
 
 
 def async_run_in_executor(func):
@@ -183,7 +204,10 @@ def async_run_in_executor(func):
         loop = getattr(self, "loop", asyncio.get_running_loop())
         # 优先使用类自己的 executor，否则用默认线程池
         executor = getattr(self, "executor", None)
-        result = await loop.run_in_executor(executor, functools.partial(func, self, *args, **kwargs))
+
+        # 在线程池中运行
+        _func = functools.partial(func, self, *args, **kwargs)
+        result = await loop.run_in_executor(executor, _func)
 
         # # 方案2 使用 asyncio.to_thread 在线程池中运行
         # result = await asyncio.to_thread(func, *args, **kwargs)

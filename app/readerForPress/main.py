@@ -1,7 +1,6 @@
 import os
 import asyncio
 import signal
-from concurrent.futures import ThreadPoolExecutor
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
@@ -33,17 +32,22 @@ async def main():
         loop.add_signal_handler(signal.SIGINT, stop_event.set)
         loop.add_signal_handler(signal.SIGTERM, stop_event.set)
 
-    # 实例化 press_info
-    async with await PressInfo.create(press_line=press_line, executor=None,  **redis_con) as press_info:
-        try:
-            # 启动
+    try:
+        # 实例化 press_info
+        async with await PressInfo.create(press_line=press_line, executor=None,  **redis_con) as press_info:
+            # 启动 定时器
             press_info.work()
-            _logger.info(f"[Main] press reader started")
-
             # 等待事件触发
             await stop_event.wait()
-        finally:
-            _logger.info(f"[Main] press reader ended")
+
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        _logger.warning(f"[Main] press reader cancelled")
+    except Exception as err:
+        # traceback.print_exc()
+        # traceback.format_exc()
+        _logger.exception(f"[Main] press reader error: {err}")
+    finally:
+        _logger.info(f"[Main] press reader ended")
 
 
 def init_logger():
@@ -88,14 +92,9 @@ def init_logger():
 
 
 if __name__ == "__main__":
-    try:
-        # 初始化 logger
-        init_logger()
-        # 协程运行
-        asyncio.run(main())
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        _logger.info(f"[Main] press reader cancelled")
-    except Exception as err:
-        # traceback.print_exc()
-        # traceback.format_exc()
-        _logger.exception(f"[Main] press reader error: {err}")
+
+    # 初始化 logger
+    init_logger()
+    # 协程运行
+    asyncio.run(main())
+

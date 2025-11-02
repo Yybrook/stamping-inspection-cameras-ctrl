@@ -78,7 +78,7 @@ class ModbusAddress(metaclass=ModbusAddressMeta):
 
 
 if __name__ == "__main__":
-    ModbusAddress.load_address(r"C:\Users\yy\Documents\yyProjects\StampingInspection\stamping-inspection\cameras-ctrl\config\modbus_address.yml")
-    # print(ModbusAddress.show())
-    # print(f"enable -> {ModbusAddress.get_address('enable')}")
+    ModbusAddress.load_address(r"../config/modbus_address.yml")
+    print(ModbusAddress.show())
+    print(f"enable -> {ModbusAddress.get_address('enable')}")
     print(f"light_enable -> {ModbusAddress['light_enable']}")

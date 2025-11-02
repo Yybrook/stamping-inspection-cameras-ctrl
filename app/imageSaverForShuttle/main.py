@@ -4,7 +4,7 @@ import signal
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-from saver import ImageSaverForShuttle
+from imageSaver import ImageSaverForShuttle
 from config import config
 import utils
 
@@ -24,6 +24,7 @@ udp_multicast_con = {
     "udp_multicast_ip": config.UDP_MULTICAST_IP,
     "udp_multicast_port": config.UDP_MULTICAST_PORT,
     "udp_multicast_interface_ip": config.UDP_MULTICAST_INTERFACE_IP,
+    "udp_ttl": config.UDP_TTL,
 }
 
 image_saved_dir = config.IMAGE_SAVED_DIR_FOR_SHUTTLE
@@ -43,26 +44,31 @@ async def main():
         loop.add_signal_handler(signal.SIGINT, stop_event.set)
         loop.add_signal_handler(signal.SIGTERM, stop_event.set)
 
-    async with await ImageSaverForShuttle.create(
-            stop_event=stop_event,
-            executor=None,
-            press_line=press_line,
-            saved_dir=image_saved_dir,
-            get_image_timeout=get_image_timeout_sec,
-            image_overwrite=image_overwrite,
-            image_format=image_format,
-            image_workers_number=image_workers_number,
-            **redis_con,
-            **udp_multicast_con,
-    ) as saver:
-        # 等待所有任务运行
-        try:
+    try:
+        async with await ImageSaverForShuttle.create(
+                stop_event=stop_event,
+                executor=None,
+                press_line=press_line,
+                saved_dir=image_saved_dir,
+                get_image_timeout=get_image_timeout_sec,
+                image_overwrite=image_overwrite,
+                image_format=image_format,
+                image_workers_number=image_workers_number,
+                **redis_con,
+                **udp_multicast_con,
+        ) as saver:
+            # 等待所有任务运行
             tasks = [*saver.tasks, stop_event.wait()]
             # return_exceptions=True -> CancelledError 不会向上抛出
             await asyncio.gather(*tasks, return_exceptions=False)
-        finally:
-            stop_event.set()
-            _logger.info(f"[Main] image saver for shuttle ended")
+
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        _logger.warning(f"[Main] image saver for shuttle cancelled")
+    except Exception as err:
+        _logger.exception(f"[Main] image saver for shuttle error: {err}")
+    finally:
+        stop_event.set()
+        _logger.info(f"[Main] image saver for shuttle ended")
 
 
 def init_logger():
@@ -107,15 +113,8 @@ def init_logger():
 
 
 if __name__ == "__main__":
-    try:
-        # 初始化 logger
-        init_logger()
-        # 协程运行
-        asyncio.run(main())
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        _logger.info(f"[Main] image saver for shuttle cancelled")
-    except Exception as err:
-        # traceback.print_exc()
-        # traceback.format_exc()
-        _logger.exception(f"[Main] image saver for shuttle error: {err}")
 
+    # 初始化 logger
+    init_logger()
+    # 协程运行
+    asyncio.run(main())

@@ -1,1 +1,0 @@
-from .saverForShuttle.image_saver import ImageSaver as ImageSaverForShuttle

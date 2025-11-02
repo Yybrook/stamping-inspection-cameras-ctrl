@@ -1,9 +1,22 @@
 registered_cameras: &registered_cameras
-  - 192.168.4.101
-  - 192.168.4.102
-  - 192.168.4.105
+#  - 192.168.4.101
+#  - 192.168.4.102
+#  - 192.168.4.105
+#  - 192.168.4.111
+#  - 192.168.4.112
+#  - 192.168.4.113
+#  - 192.168.4.114
+#  - 192.168.4.115
+#  - 192.168.4.116
+  - 192.168.31.230
 
 parts:
+  140: # test ok
+    car_type: 'Tharu XR'
+    Part_num: "22D 827 159"
+    cameras: *registered_cameras
+    shuttle_sensor_type: 2
+    trigger_delay: 0.4
   142: # test ok
     car_type: 'Tharu XR'
     Part_num: "22D 809 605A"
@@ -17,18 +30,6 @@ parts:
     shuttle_sensor_type: 0
     trigger_delay: 0.4
 
-  76: # test ok
-    car_type: 'Passat B8'
-    Part_num: "3GB 809 605"
-    cameras: *registered_cameras
-    shuttle_sensor_type: 2
-    trigger_delay: 0.5
-  77: # test ok
-    car_type: 'Passat B8'
-    Part_num: "3GB 809 606"
-    cameras: *registered_cameras
-    shuttle_sensor_type: 1
-    trigger_delay: 0.4
   50: # test ok
     car_type: 'Passat B8'
     Part_num: "3GB 817 111 A"
@@ -41,18 +42,31 @@ parts:
     cameras: *registered_cameras
     shuttle_sensor_type: 0
     trigger_delay: 0.4
+  76: # test ok
+    car_type: 'Passat B8'
+    Part_num: "3GB 809 605"
+    cameras: *registered_cameras
+    shuttle_sensor_type: 2
+    trigger_delay: 0.5
+  77: # test ok
+    car_type: 'Passat B8'
+    Part_num: "3GB 809 606"
+    cameras: *registered_cameras
+    shuttle_sensor_type: 1
+    trigger_delay: 0.4
 
-  120:
+
+  120: # test ok
     car_type: 'Passat B9'
     Part_num: "3JG 809 605"
     cameras: *registered_cameras
-    shuttle_sensor_type: 0
+    shuttle_sensor_type: 2
     trigger_delay: 0.4
-  121:
+  121: # test ok
     car_type: 'Passat B9'
     Part_num: "3JG 809 606"
     cameras: *registered_cameras
-    shuttle_sensor_type: 0
+    shuttle_sensor_type: 1
     trigger_delay: 0.4
   128:
     car_type: 'Passat B9'
@@ -61,39 +75,34 @@ parts:
     shuttle_sensor_type: 0
     trigger_delay: 0.4
 
-  105:
-    car_type: 'Lavida XR'
-    Part_num: "2SG 809 605"
-    cameras: *registered_cameras
-    shuttle_sensor_type: 0
-    trigger_delay: 0.4
-  106: # test ok
-    car_type: 'Lavida XR'
-    Part_num: "2SG 809 606"
-    cameras: *registered_cameras
-    shuttle_sensor_type: 2
-    trigger_delay: 0.4
-  98: # test ok
-    car_type: 'Lavida XR'
-    Part_num: "2SG 817 111B C"
-    cameras: *registered_cameras
-    shuttle_sensor_type: 1
-    trigger_delay: 0.4
-  13: # test ok
-    car_type: 'Lavida XR'
-    Part_num: "2SG 827 106 159"
-    cameras: *registered_cameras
-    shuttle_sensor_type: 0
-    trigger_delay: 0.4
-  140: # test ok
-      car_type: 'Tharu XR'
-      Part_num: "22D 827 159"
-      cameras: *registered_cameras
-      shuttle_sensor_type: 2
-      trigger_delay: 0.4
-  #  14: # not use shuttle
-  #    car_type: 'Lavida XR'
-  #    Part_num: "2SG 821 105 106"
-  #    cameras: *register_cameras
-  #    shuttle_sensor_type: 0
-  #    trigger_delay: 0.4
+#  13: # test ok
+#    car_type: 'Lavida XR'
+#    Part_num: "2SG 827 106 159"
+#    cameras: *registered_cameras
+#    shuttle_sensor_type: 0
+#    trigger_delay: 0.4
+#  14: # not use shuttle
+#    car_type: 'Lavida XR'
+#    Part_num: "2SG 821 105 106"
+#    cameras: *registered_cameras
+#    shuttle_sensor_type: 0
+#    trigger_delay: 0.4
+#  98: # test ok
+#    car_type: 'Lavida XR'
+#    Part_num: "2SG 817 111B C"
+#    cameras: *registered_cameras
+#    shuttle_sensor_type: 1
+#    trigger_delay: 0.4
+#  105:
+#    car_type: 'Lavida XR'
+#    Part_num: "2SG 809 605"
+#    cameras: *registered_cameras
+#    shuttle_sensor_type: 0
+#    trigger_delay: 0.4
+#  106: # test ok
+#    car_type: 'Lavida XR'
+#    Part_num: "2SG 809 606"
+#    cameras: *registered_cameras
+#    shuttle_sensor_type: 2
+#    trigger_delay: 0.4
+

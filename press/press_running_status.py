@@ -3,6 +3,9 @@ import typing
 from collections import deque
 from enum import StrEnum
 from threading import Lock
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 QUEUE_MAX_LEN = 4           # 队列最大长度
@@ -15,7 +18,6 @@ class RunningType(StrEnum):
     RUNNING = "RUNNING"
     STANDBY = "STANDBY"
     STOPPED = "STOPPED"
-    UNKNOWN = "UNKNOWN"
 
     def is_running(self) -> bool:
        return self is RunningType.RUNNING
@@ -36,16 +38,18 @@ class PressRunningStatus:
             light = yield None
             # 放入队列
             self.push(light)
+            _logger.debug(f"{self.identity} get[{light}], queue={self.__repr__()}")
             # 检测
             if t >= SIGNAL_DETECT_TIMES - 1:
                 running = self.detect()
+                _logger.debug(f"{self.identity} detect_in_loop()={running}")
                 return running
             t += 1
 
     def detect(self) -> RunningType:
         new = list(self.queue)[-1 * SIGNAL_DETECT_TIMES:]
         if len(new) < SIGNAL_DETECT_TIMES:
-            return RunningType.UNKNOWN
+            raise ValueError(f"queue length[{len(new)}] is less required[{SIGNAL_DETECT_TIMES}]")
 
         new_sum = sum(map(lambda x: x[1], new))
         if new_sum == SIGNAL_DETECT_TIMES:
@@ -76,3 +80,53 @@ class PressRunningStatus:
 
     def __repr__(self):
         return str([item[1] for item in self.queue])
+
+    @property
+    def identity(self):
+        return "Press[RunningStatus]"
+
+if __name__ == "__main__":
+    import random
+
+    def init_logger():
+        # 创建logger对象
+        logger = logging.getLogger()
+        # 设置全局最低等级（让所有handler能接收到）
+        logger.setLevel(logging.DEBUG)
+        # 控制台 Handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.DEBUG)
+        console_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        console_handler.setFormatter(console_formatter)
+        # 添加 handler 到 logger
+        logger.addHandler(console_handler)
+
+        # logging.getLogger('asyncio').setLevel(logging.INFO)
+
+    def main():
+        try:
+            p = PressRunningStatus()
+            while True:
+                # 创建生成器
+                gen = p.detect_in_loop()
+                # 初始化 generator，进入 yield 状态
+                next(gen)
+                while True:
+                    s = random.randint(0, 9 ) >= 5
+                    try:
+                        gen.send(s)
+                    except StopIteration as err:
+                        running = err.value
+                        print(f"running={running}")
+                        break
+                    time.sleep(SIGNAL_DETECT_INTERVAL_S)
+        except KeyboardInterrupt:
+            print("中断")
+        except Exception as err:
+            print(f"错误: {err}")
+        finally:
+            print("退出")
+
+    init_logger()
+    main()
+

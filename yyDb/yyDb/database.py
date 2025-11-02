@@ -377,7 +377,7 @@ class Database:
                 formatted_sql = safety_sql.format(*[repr(p) for p in para])
                 _logger.debug(f"{self.identity} sql: {formatted_sql}")
             except Exception as err:
-                _logger.exception(f"{self.identity} SQL format failed for SQL={sql}, params={para}: {err}")
+                _logger.exception(f"{self.identity} sql[{sql}], params[{para}] format error: {err}")
         else:
             _logger.debug(f"{self.identity} sql: {sql}")
 

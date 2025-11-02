@@ -1,6 +1,6 @@
 import typing
 from .modbus_address import ModbusAddress
-from modbus.modbus.async_modbus_tcp_client import MyAsyncModbusTCPClient
+from .modbus.async_modbus_tcp_client import MyAsyncModbusTCPClient
 
 
 class CameraCtrlModbusClient(MyAsyncModbusTCPClient):
@@ -12,6 +12,7 @@ class CameraCtrlModbusClient(MyAsyncModbusTCPClient):
         modbus_address_path = kwargs.pop("modbus_address_path", None)
 
         super().__init__(host=host, port=port, slave=slave, **kwargs)
+
 
         self.address = ModbusAddress.load_address(path=modbus_address_path)
 
@@ -64,4 +65,4 @@ class CameraCtrlModbusClient(MyAsyncModbusTCPClient):
 
     @property
     def identity(self):
-        return f"[ModbusTCPClient|CameraCtrl]"
+        return f"Modbus[TCPClient|CameraCtrl]"

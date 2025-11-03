@@ -123,6 +123,7 @@ class ImageSaver:
             asyncio.create_task(saver.save_images_loop()),
         ]
 
+        # todo 开启多个worker 用于保存图片
         # 创建多个 save_images_loop
         # for _ in range(saver.image_workers_number):
         #     saver.tasks.append(asyncio.create_task(saver.save_images_loop()))

@@ -107,7 +107,7 @@ def init_logger():
     logger.addHandler(file_handler)
 
     # 设置特定日志等级
-    # logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
+    # logging.getLogger('redisDb.async_redis_db').setLevel(logging.DEBUG)
     # logging.getLogger('apscheduler.scheduler').setLevel(logging.WARNING)
     # logging.getLogger('snap7.client').setLevel(logging.WARNING)
 

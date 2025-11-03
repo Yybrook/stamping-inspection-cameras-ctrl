@@ -20,7 +20,7 @@ TORTOISE_ORM = {
     },
     'apps': {
         'models': {
-            'models': ['saver.saverForShuttle.models', "aerich.models"],
+            'models': ['imageSaver.imageSaverForShuttle.models', "aerich.models"],
             'default_connection': 'default',
         }
     },

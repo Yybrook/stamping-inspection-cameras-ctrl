@@ -199,14 +199,13 @@ class CameraCtrl:
 
                     # 读取 part_count
                     part_counter = await plc.read_part_counter()
-
-                    # 软触发
-                    self.delay_2_TriggerSoftware(value=has_part_t)
-
                     # part_count 设置 bias
                     part_counter = PartCounter.on_shuttle(counter=part_counter)
                     # 发布 part_count
                     await self.redis.set_part_counter(part_counter=part_counter, press_line=self.press_line)
+
+                    # 软触发
+                    self.delay_2_TriggerSoftware(value=has_part_t)
 
                     _logger.info(f"{self.identity} shuttle has part[counter={part_counter},interval={self.shuttle.interval}]")
 

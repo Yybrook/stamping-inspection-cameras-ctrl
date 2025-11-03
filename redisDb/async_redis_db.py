@@ -475,7 +475,7 @@ class AsyncRedisDB(redis.asyncio.Redis):
             program_id=program_id,
             part_counter=part_counter,
         )
-        ips = await self.sdiff(key.running_camera_key, key.photographed_key)
+        ips = await self.sdiff([key.running_camera_key, key.photographed_key])
         ips = [_decode_bytes(ip) for ip in ips]
         _logger.debug(f"{self.identity} get_unphotographed_ips({press_line},{program_id},{part_counter})={ips}")
         return ips
@@ -597,9 +597,11 @@ if __name__ == "__main__":
         #     await r.get_light_enable("5-100")
 
         r = await AsyncRedisDB.create(host="127.0.0.1", port=6379, db=0)
-        await r.set_program_id(1, "5-100")
 
-        await r.get_latest_program_id("5-100")
+        # await r.set_program_id(1, "5-100")
+        # await r.get_latest_program_id("5-100")
+
+        await r.set_part_counter(part_counter=1, press_line="5-100")
 
         await r.aclose()
 

@@ -26,9 +26,23 @@ global:
     GevSCPD: 32458
 
   custom:
-    host_ip: 192.168.4.222
+    host_ip: 192.168.4.223
 
 192.168.4.102:
+  native:
+    GevSCPD: 32458
+
+  custom:
+    host_ip: 192.168.4.223
+
+192.168.4.103:
+  native:
+    GevSCPD: 32458
+
+  custom:
+    host_ip: 192.168.4.223
+
+192.168.4.104:
   native:
     GevSCPD: 32458
 
@@ -40,46 +54,32 @@ global:
     GevSCPD: 32458
 
   custom:
-    host_ip: 192.168.4.223
+    host_ip: 192.168.4.222
 
-192.168.4.99:
+192.168.4.106:
   native:
+    GevSCPD: 32458
+
+  custom:
+    host_ip: 192.168.4.222
+
+192.168.4.107:
+  native:
+    GevSCPD: 32458
+  custom:
+    host_ip: 192.168.4.222
+
+192.168.4.108:
+  native:
+    GevSCPD: 32458
+
+  custom:
+    host_ip: 192.168.4.222
+
+192.168.4.199:
+  native:
+    ExposureTime: 1500
     GevSCPD: 154378
 
   custom:
     host_ip: 192.168.4.222
-
-192.168.4.109:
-  native:
-    GevSCPD: 32458
-
-  custom:
-    host_ip: 192.168.4.222
-
-192.168.4.113:
-  native:
-    GevSCPD: 32458
-
-  custom:
-    host_ip: 192.168.4.222
-
-192.168.4.114:
-  native:
-    GevSCPD: 32458
-
-  custom:
-    host_ip: 192.168.4.223
-
-192.168.4.115:
-  native:
-    GevSCPD: 32458
-  custom:
-    host_ip: 192.168.4.223
-
-192.168.4.116:
-  native:
-    GevSCPD: 32458
-
-  custom:
-    host_ip: 192.168.4.222
-

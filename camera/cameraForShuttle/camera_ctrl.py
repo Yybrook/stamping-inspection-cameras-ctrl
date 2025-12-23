@@ -222,14 +222,9 @@ class CameraCtrl:
         # 获取运行的相机ip
         camera_ips = await self.redis.get_running_cameras(press_line=self.press_line)
 
-
+        # todo 使用延时触发相机，可能需要优化
         for ip in camera_ips:
-            if ip == "192.168.4.111":
-                trigger_delay = self.trigger_delay - 0.1
-            elif ip == "192.168.4.112":
-                trigger_delay = self.trigger_delay - 0.15
-            else:
-                trigger_delay = self.trigger_delay
+            trigger_delay = self.trigger_delay
             # 延时发送消息
             self.loop.call_later(trigger_delay, self._sync_publish_rabbitmq_2_task, ip, data)
 
@@ -287,6 +282,9 @@ class CameraCtrl:
 
     # #################### 监控running status -> 开灯, 延时关灯 ####################
     async def subscribe_running_status(self):
+        # todo 延时3秒，再接受redis消息，防止错过灯信号，需要优化
+        await asyncio.sleep(3)
+
         # 使用异步生成器获取运行状态
         async for timestamp, running_status in self.redis.get_running_status(
                 press_line=self.press_line,
@@ -299,6 +297,12 @@ class CameraCtrl:
 
             try:
                 if running_status is None:
+                    continue
+
+                # 没有相机运行，则关灯
+                if await self.redis.get_running_cameras_number(press_line=self.press_line) <= 0:
+                    if await self.redis.get_light_enable(press_line=self.press_line):
+                        await self.redis.set_light_disable(press_line=self.press_line)
                     continue
 
                 # 接收到新的 running_status

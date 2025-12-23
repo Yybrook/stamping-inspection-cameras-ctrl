@@ -1,21 +1,21 @@
 registered_cameras: &registered_cameras
   - 192.168.4.101
   - 192.168.4.102
+  - 192.168.4.103
+  - 192.168.4.104
   - 192.168.4.105
-  - 192.168.4.109
-  - 192.168.4.99
-  - 192.168.4.113
-  - 192.168.4.114
-  - 192.168.4.115
-  - 192.168.4.116
+  - 192.168.4.106
+  - 192.168.4.107
+  - 192.168.4.108
+  - 192.168.4.199
 
 parts:
-  49:
-    car_type: 'Tharu XR'
-    Part_num: "22D 817 111 A"
-    cameras: *registered_cameras
-    shuttle_sensor_type: 0
-    trigger_delay: 0.3
+#  49:
+#    car_type: 'Tharu XR'
+#    Part_num: "22D 817 111 A"
+#    cameras: *registered_cameras
+#    shuttle_sensor_type: 0
+#    trigger_delay: 0.4
   140: # test ok
     car_type: 'Tharu XR'
     Part_num: "22D 827 159"
@@ -35,18 +35,27 @@ parts:
     shuttle_sensor_type: 0
     trigger_delay: 0.4
 
-  50: # test ok
-    car_type: 'Passat B8'
-    Part_num: "3GB 817 111 A"
-    cameras: *registered_cameras
-    shuttle_sensor_type: 0
-    trigger_delay: 0.3
-  60:
+#  50: # test ok
+#    car_type: 'Passat B8'
+#    Part_num: "3GB 817 111 A"
+#    cameras: *registered_cameras
+#    shuttle_sensor_type: 0
+#    trigger_delay: 0.3
+  60: # test ok !
     car_type: 'Passat B8'
     Part_num: "3GB 827 106A 159A"
-    cameras: *registered_cameras
+    cameras:
+      - 192.168.4.101
+      - 192.168.4.102
+      - 192.168.4.103
+#      - 192.168.4.104
+      - 192.168.4.105
+      - 192.168.4.106
+      - 192.168.4.107
+      - 192.168.4.108
+      - 192.168.4.199
     shuttle_sensor_type: 0
-    trigger_delay: 0.4
+    trigger_delay: 0.40
   76: # test ok
     car_type: 'Passat B8'
     Part_num: "3GB 809 605"
@@ -79,9 +88,9 @@ parts:
     cameras: *registered_cameras
     shuttle_sensor_type: 0
     trigger_delay: 0.4
-  129:
-    car_type: 'Passat B9'
-    Part_num: "3JG 817 111 A"
-    cameras: *registered_cameras
-    shuttle_sensor_type: 0
-    trigger_delay: 0.3
+#  129:
+#    car_type: 'Passat B9'
+#    Part_num: "3JG 817 111 A"
+#    cameras: *registered_cameras
+#    shuttle_sensor_type: 0
+#    trigger_delay: 0.3

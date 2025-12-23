@@ -601,7 +601,12 @@ if __name__ == "__main__":
         # await r.set_program_id(1, "5-100")
         # await r.get_latest_program_id("5-100")
 
-        await r.set_part_counter(part_counter=1, press_line="5-100")
+        # await r.set_part_counter(part_counter=1, press_line="5-100")
+        async for timestamp, running_status in r.get_running_status(
+            press_line="5-100",
+                block=None,         # 阻塞1秒等待新消息
+                include_last=True ):
+            print(timestamp, running_status)# 先返回最后一条历史消息
 
         await r.aclose()
 

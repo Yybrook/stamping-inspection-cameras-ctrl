@@ -108,7 +108,7 @@ def init_logger():
 
     # 设置特定日志等级
     # logging.getLogger('redisDb.async_redis_db').setLevel(logging.DEBUG)
-    # logging.getLogger('asyncodbc').setLevel(logging.WARNING)
+    logging.getLogger('asyncodbc').setLevel(logging.WARNING)
     # logging.getLogger('snap7.client').setLevel(logging.WARNING)
 
 

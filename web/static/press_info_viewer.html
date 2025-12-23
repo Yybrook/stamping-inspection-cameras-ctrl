@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8"/>
+    <title>压机实时信息</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            padding-top: 24px;
+            margin-bottom: 16px;
+            font-size: 28px;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 24px;
+        }
+
+        #conn_status {
+            font-weight: bold;
+            transition: color 0.3s ease;
+            color: #555;
+        }
+
+        .card {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 24px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            background-color: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 17px;
+        }
+
+        th, td {
+            padding: 10px 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #34495e;
+            font-weight: bold;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        td {
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+        }
+
+        td.label {
+            text-align: left;
+            font-weight: bold;
+            width: 35%;
+            color: #34495e;
+        }
+
+        td.value {
+            text-align: center;
+            width: 30%;
+        }
+
+        td.time {
+            text-align: center;
+            width: 35%;
+            color: #555;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<h1>压机实时信息</h1>
+
+<div class="status"><span id="conn_status"></span></div>
+
+<div class="card">
+    <table>
+        <tr>
+            <td class="label">生产线</td>
+            <td class="value" id="press_line">--</td>
+            <td class="time"></td>
+        </tr>
+        <tr>
+            <td class="label">程序号</td>
+            <td class="value" id="program_id">--</td>
+            <td class="time" id="program_id_timestamp">--</td>
+        </tr>
+        <tr>
+            <td class="label">零件计数</td>
+            <td class="value" id="part_counter">--</td>
+            <td class="time" id="part_counter_timestamp">--</td>
+        </tr>
+        <tr>
+            <td class="label">压机运行状态</td>
+            <td class="value" id="running_status">--</td>
+            <td class="time" id="running_status_timestamp">--</td>
+        </tr>
+        <tr>
+            <td class="label">光源使能</td>
+            <td class="value" id="light_enable">--</td>
+            <td class="time" id="light_enable_ttl">--</td>
+        </tr>
+    </table>
+</div>
+
+<script src="/statics/app.js"></script>
+<script>
+
+    // 获取完整 path -> /pressInfo/5-100
+    const path = window.location.pathname;
+    // 分割路径
+    const segments = path.split("/");
+    const pressLine = segments[segments.length - 1];
+    console.debug("path: ", path);
+    console.debug("press line: ", pressLine);
+
+    const connStatusEl = document.getElementById("conn_status");
+
+    const pressLineEl = document.getElementById("press_line");
+
+    const programIdEl = document.getElementById("program_id");
+    const programIdTimestampEl = document.getElementById("program_id_timestamp");
+
+    const partCounterEl = document.getElementById("part_counter");
+    const partCounterTimestampEl = document.getElementById("part_counter_timestamp");
+
+    const runningStatusEl = document.getElementById("running_status");
+    const runningStatusTimestampEl = document.getElementById("running_status_timestamp");
+
+    const lightEnableEl = document.getElementById("light_enable");
+    const lightEnableTtlEl = document.getElementById("light_enable_ttl");
+
+    const runningStatusMap = {
+        "1": {label: "运行", color: "green"},
+        "0": {label: "停止", color: "orange"},
+    };
+
+    const lightEnableMap = {
+        "1": {label: "enable", color: "green"},
+        "0": {label: "disable", color: "orange"},
+    };
+
+
+    const WS_URL = `ws://${location.host}/pressInfo/${pressLine}/ws`;
+    const WEBSOCKET_RECONNECT_INTERVAL = 3000;
+    let wsReconnectTimer = null;
+    let ws = null
+
+    function connectWebsocket() {
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = () => {
+            setConnStatus(0);
+            // 清除 重连计时器
+            if (wsReconnectTimer) {
+                clearTimeout(wsReconnectTimer);
+                wsReconnectTimer = null;
+            }
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.debug("websocket recv: ", data);
+
+                if (data.program_id && typeof data.program_id === "object") {
+                    programIdEl.textContent = data.program_id.value ?? "--";
+                    const timestamp = data.program_id.timestamp ?? null;
+                    programIdTimestampEl.textContent = timestamp ? formatTimestamp(timestamp) : "--";
+                }
+
+                if (data.part_counter && typeof data.part_counter === "object") {
+                    partCounterEl.textContent = data.part_counter.value ?? "--";
+                    const timestamp = data.part_counter.timestamp ?? null;
+                    partCounterTimestampEl.textContent = timestamp ? formatTimestamp(timestamp) : "--";
+                }
+
+                if (data.running_status && typeof data.running_status === "object") {
+                    const timestamp = data.running_status.timestamp ?? null;
+                    runningStatusTimestampEl.textContent = timestamp ? formatTimestamp(timestamp) : "--";
+
+                    const status = data.running_status.value;
+                    const map = runningStatusMap[status];
+                    if (map) {
+                        runningStatusEl.textContent = map.label;
+                        runningStatusEl.style.color = map.color;
+                    } else {
+                        runningStatusEl.textContent = "--";
+                        runningStatusEl.style.color = "#34495e";
+                    }
+                }
+
+                if (data.light_enable && typeof data.light_enable === "object") {
+                    lightEnableTtlEl.textContent = data.light_enable.ttl ?? "--";
+
+                    const enable = data.light_enable.value;
+                    const map = lightEnableMap[enable];
+                    if (map) {
+                        lightEnableEl.textContent = map.label;
+                        lightEnableEl.style.color = map.color;
+                    } else {
+                        lightEnableEl.textContent = "--";
+                        lightEnableEl.style.color = "#34495e";
+                    }
+                }
+
+            } catch (err) {
+                console.error("websocket onmessage error: ", err);
+            }
+        };
+
+        ws.onerror = () => {
+            setConnStatus(1);
+        };
+
+        ws.onclose = () => {
+            setConnStatus(-1);
+            scheduleReconnectWebsocket();
+        };
+    }
+
+    // websocket 重连， 每间隔 RECONNECT_INTERVAL
+    function scheduleReconnectWebsocket() {
+        if (!wsReconnectTimer) {
+            wsReconnectTimer = setTimeout(() => {
+                connectWebsocket()
+            }, WEBSOCKET_RECONNECT_INTERVAL);
+        }
+    }
+
+    // 设置连接状态
+    function setConnStatus(flag) {
+        if (flag === 0) {
+            connStatusEl.textContent = "websocket 已连接";
+            connStatusEl.style.color = "green";
+        } else if (flag === 1) {
+            connStatusEl.textContent = "websocket 连接错误";
+            connStatusEl.style.color = "orange";
+        } else {
+            connStatusEl.textContent = "websocket 未连接";
+            connStatusEl.style.color = "grey";
+        }
+    }
+
+    // 初始化状态
+    setConnStatus(-1);
+    pressLineEl.textContent = pressLine;
+
+    // 连接 websocket
+    connectWebsocket()
+
+</script>
+</body>
+</html>

@@ -50,11 +50,6 @@ def _decode_stream_msg(msg_id, msg_data):
     return _id, _data
 
 
-def timestamp_ms_2_strf(timestamp_ms: int) -> str:
-    dt = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone(timedelta(hours=8)))
-    return dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-
-
 class AsyncRedisDB(redis.asyncio.Redis):
     def __init__(self, host, port, db):
 
@@ -151,6 +146,11 @@ class AsyncRedisDB(redis.asyncio.Redis):
         else:
             raise ValueError(f"stream[{stream_key}] is empty")
 
+    @staticmethod
+    def timestamp_ms_2_strf(timestamp_ms: int) -> str:
+        dt = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone(timedelta(hours=8)))
+        return dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+
     # --------------------------------------------------------------------------- #
     # subscribe 基础方法
     # --------------------------------------------------------------------------- #
@@ -212,7 +212,7 @@ class AsyncRedisDB(redis.asyncio.Redis):
         program_id = int(msg_data["program_id"]) if "program_id" in msg_data else None
         # 时间戳
         timestamp_ms = int(msg_id.split("-")[0])
-        _logger.debug(f"{self.identity} get_latest_program_id({press_line})=({timestamp_ms_2_strf(timestamp_ms)},{program_id})")
+        _logger.debug(f"{self.identity} get_latest_program_id({press_line})=({self.timestamp_ms_2_strf(timestamp_ms)},{program_id})")
         return timestamp_ms, program_id
 
     async def get_program_id(
@@ -242,7 +242,7 @@ class AsyncRedisDB(redis.asyncio.Redis):
                 program_id = int(msg_data["program_id"]) if "program_id" in msg_data else None
                 # 时间戳
                 timestamp_ms = int(msg_id.split("-")[0])
-                _logger.debug(f"{self.identity} get_program_id({press_line})=({timestamp_ms_2_strf(timestamp_ms)},{program_id})")
+                _logger.debug(f"{self.identity} get_program_id({press_line})=({self.timestamp_ms_2_strf(timestamp_ms)},{program_id})")
                 yield timestamp_ms, program_id
 
     async def del_program_id(self, press_line: str):
@@ -276,7 +276,7 @@ class AsyncRedisDB(redis.asyncio.Redis):
         running_status = bool(int(msg_data["running_status"])) if "running_status" in msg_data else None
         # 时间戳
         timestamp_ms = int(msg_id.split("-")[0])
-        _logger.debug(f"{self.identity} get_latest_running_status({press_line})=({timestamp_ms_2_strf(timestamp_ms)},{running_status})")
+        _logger.debug(f"{self.identity} get_latest_running_status({press_line})=({self.timestamp_ms_2_strf(timestamp_ms)},{running_status})")
         return timestamp_ms, running_status
 
     async def get_running_status(
@@ -306,7 +306,7 @@ class AsyncRedisDB(redis.asyncio.Redis):
                 running_status = bool(int(msg_data["running_status"])) if "running_status" in msg_data else None
                 # 时间戳
                 timestamp_ms = int(msg_id.split("-")[0])
-                _logger.debug(f"{self.identity} get_running_status({press_line})=({timestamp_ms_2_strf(timestamp_ms)},{running_status})")
+                _logger.debug(f"{self.identity} get_running_status({press_line})=({self.timestamp_ms_2_strf(timestamp_ms)},{running_status})")
                 yield timestamp_ms, running_status
 
     async def del_running_status(self, press_line: str):
@@ -332,7 +332,7 @@ class AsyncRedisDB(redis.asyncio.Redis):
         part_counter = int(msg_data["part_counter"]) if "part_counter" in msg_data else None
         # 时间戳
         timestamp_ms = int(msg_id.split("-")[0])
-        _logger.debug(f"{self.identity} get_latest_part_counter({press_line})=({timestamp_ms_2_strf(timestamp_ms)},{part_counter})")
+        _logger.debug(f"{self.identity} get_latest_part_counter({press_line})=({self.timestamp_ms_2_strf(timestamp_ms)},{part_counter})")
         return timestamp_ms, part_counter
 
     async def get_part_counter(
@@ -362,7 +362,7 @@ class AsyncRedisDB(redis.asyncio.Redis):
                 part_counter = int(msg_data["part_counter"]) if "part_counter" in msg_data else None
                 # 时间戳
                 timestamp_ms = int(msg_id.split("-")[0])
-                _logger.debug(f"{self.identity} get_part_counter({press_line})=({timestamp_ms_2_strf(timestamp_ms)},{part_counter})")
+                _logger.debug(f"{self.identity} get_part_counter({press_line})=({self.timestamp_ms_2_strf(timestamp_ms)},{part_counter})")
                 yield timestamp_ms, part_counter
 
     async def del_part_counter(self, press_line: str):
@@ -544,7 +544,7 @@ class AsyncRedisDB(redis.asyncio.Redis):
             else:
                 await self.set(key.light_enable_key, int(True), ex=disable_after)
 
-    async def set_light_disable(self, press_line: str, after: typing.Optional[int] = 600):
+    async def set_light_disable(self, press_line: str, after: typing.Optional[int] = None):
         key = ShuttleKey.create(press_line=press_line)
         if after is None:
             if await self.exists(key.light_enable_key):

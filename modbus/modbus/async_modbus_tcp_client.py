@@ -21,7 +21,7 @@ class MyAsyncModbusTCPClient(AsyncModbusTcpClient):
         远程服务器地址
         :return: (host, port)
         """
-        return self.comm_params.host, self.comm_params.multicast_port
+        return self.comm_params.host, self.comm_params.port
 
     async def connect(self) -> bool:
         """

@@ -89,6 +89,9 @@ def init_logger():
     logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
     logging.getLogger('apscheduler.scheduler').setLevel(logging.WARNING)
     logging.getLogger('snap7.client').setLevel(logging.WARNING)
+    # logging.getLogger('redisDb.async_redis_db').setLevel(logging.DEBUG)
+    # logging.getLogger('plc.plc.plc_operator').setLevel(logging.INFO)
+    # logging.getLogger('press.press_running_status').setLevel(logging.INFO)
 
 
 if __name__ == "__main__":

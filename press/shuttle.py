@@ -2,7 +2,7 @@ import time
 from enum import IntEnum
 
 # 最小检测时间间隔，滤波防抖
-HAS_PART_THRESHOLD_MS = 500
+HAS_PART_THRESHOLD_MS = 1000
 
 
 class DetectType(IntEnum):

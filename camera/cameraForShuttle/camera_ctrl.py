@@ -205,7 +205,7 @@ class CameraCtrl:
                     await self.redis.set_part_counter(part_counter=part_counter, press_line=self.press_line)
 
                     # 软触发
-                    self.delay_2_TriggerSoftware(value=has_part_t)
+                    await self.delay_2_TriggerSoftware(value=has_part_t)
 
                     _logger.info(f"{self.identity} shuttle has part[counter={part_counter},interval={self.shuttle.interval}]")
 
@@ -214,26 +214,27 @@ class CameraCtrl:
 
             _logger.info(f"{self.identity} shuttle_detect() ended")
 
-    async def message_all_cameras(self, data: str):
-        # 获取运行的相机ip
-        camera_ips = await self.redis.get_running_cameras(press_line=self.press_line)
-        # 给所有运行的相机 发送信息
-        await self.rabbitmq_producer.publish(camera_ips=camera_ips, data=data)
-
-    def delay_2_TriggerSoftware(self, value):
+    async def delay_2_TriggerSoftware(self, value):
         cmds = (("set", "TriggerSoftware", value),)
         # 转为 json 字符串
         data = json.dumps(cmds)
 
-        # 方法1
-        # 延时发送消息
-        self.loop.call_later(self.trigger_delay, lambda: asyncio.create_task(self.message_all_cameras(data=data)))
+        # 获取运行的相机ip
+        camera_ips = await self.redis.get_running_cameras(press_line=self.press_line)
 
-        # # 方法2
-        # # 延时发送消息
-        # if self.trigger_delay:
-        #     await asyncio.sleep(self.trigger_delay)
-        # await self.message_all_cameras(data=data)
+
+        for ip in camera_ips:
+            if ip == "192.168.4.111":
+                trigger_delay = self.trigger_delay - 0.1
+            elif ip == "192.168.4.112":
+                trigger_delay = self.trigger_delay - 0.15
+            else:
+                trigger_delay = self.trigger_delay
+            # 延时发送消息
+            self.loop.call_later(trigger_delay, self._sync_publish_rabbitmq_2_task, ip, data)
+
+    def _sync_publish_rabbitmq_2_task(self, ip, data):
+        asyncio.create_task(self.rabbitmq_producer.publish(ip, data))
 
     # #################### 监控program id -> 打开/关闭相机 ####################
     async def subscribe_program_id(self):
@@ -247,38 +248,40 @@ class CameraCtrl:
             if self.stop_event.is_set():
                 break
 
+            if program_id is None:
+                continue
+
             # 接收到新的 program_id
-            if program_id is not None:
-                try:
-                    # 获取 program_id 信息
-                    part_info = self._parts.get(program_id, dict())
-                    # 获取 触发延时
-                    self.trigger_delay = part_info.get("trigger_delay", DEFAULT_TRIGGER_DELAY_SEC)
-                    # 改变 shuttle detect_type，默认 BOTH
-                    self.shuttle.set_detect_type(part_info.get("shuttle_sensor_type", 0))
-                    # 获取 camera_ips
-                    required_camera_ips = set(part_info.get("cameras", list()))
+            try:
+                # 获取 program_id 信息
+                part_info = self._parts.get(program_id, dict())
+                # 获取 触发延时
+                self.trigger_delay = part_info.get("trigger_delay", DEFAULT_TRIGGER_DELAY_SEC)
+                # 改变 shuttle detect_type，默认 BOTH
+                self.shuttle.set_detect_type(part_info.get("shuttle_sensor_type", 0))
+                # 获取 camera_ips
+                required_camera_ips = set(part_info.get("cameras", list()))
 
-                    # 获取运行中的相机
-                    running_camera_ips = set(await self.redis.get_running_cameras(press_line=self.press_line))
-                    # 要关闭的相机
-                    to_close_camera_ips = (running_camera_ips - required_camera_ips) & self._registered_cameras
-                    # 要打开的相机
-                    to_open_camera_ips = (required_camera_ips - running_camera_ips) & self._registered_cameras
+                # 获取运行中的相机
+                running_camera_ips = set(await self.redis.get_running_cameras(press_line=self.press_line))
+                # 要关闭的相机
+                to_close_camera_ips = (running_camera_ips - required_camera_ips) & self._registered_cameras
+                # 要打开的相机
+                to_open_camera_ips = (required_camera_ips - running_camera_ips) & self._registered_cameras
 
-                    # 关闭相机
-                    if to_close_camera_ips:
-                        await self.rabbitmq_producer.publish(camera_ips=list(to_close_camera_ips), data=json.dumps((("close",),)))
-                    # 打开相机
-                    if to_open_camera_ips:
-                        await self.rabbitmq_producer.publish(camera_ips=list(to_open_camera_ips), data=json.dumps((("open",),)))
+                # 关闭相机
+                if to_close_camera_ips:
+                    await self.rabbitmq_producer.publish(camera_ip=list(to_close_camera_ips), data=json.dumps((("close",),)))
+                # 打开相机
+                if to_open_camera_ips:
+                    await self.rabbitmq_producer.publish(camera_ip=list(to_open_camera_ips), data=json.dumps((("open",),)))
 
-                    # todo 确认相机关闭
-                    # await asyncio.sleep(10)
-                    # running_camera_ips = set(await self.redis.get_running_cameras(press_line=self.press_line))
+                # todo 确认相机关闭
+                # await asyncio.sleep(10)
+                # running_camera_ips = set(await self.redis.get_running_cameras(press_line=self.press_line))
 
-                except Exception as err:
-                    _logger.exception(f"{self.identity} handle program id error: {err}")
+            except Exception as err:
+                _logger.exception(f"{self.identity} handle program id error: {err}")
 
         _logger.info(f"{self.identity} subscribe_program_id() ended")
 
@@ -295,10 +298,13 @@ class CameraCtrl:
                 break
 
             try:
+                if running_status is None:
+                    continue
+
                 # 接收到新的 running_status
                 # 压机运行 -> 开灯
                 if running_status:
-                   await self.redis.set_light_enable(press_line=self.press_line, disable_after=None)
+                    await self.redis.set_light_enable(press_line=self.press_line, disable_after=None)
                 # 无 running_status or 压机停机 -> 10分钟后关灯
                 else:
                     await self.redis.set_light_disable(press_line=self.press_line, after=LIGHT_DISABLE_AFTER_PRESS_STOP_S)

@@ -40,7 +40,7 @@ async def output_cmds(mq):
             else:
                 camera_ips, cmds = input_cmds
                 data = json.dumps(cmds)
-                await mq.publish(camera_ips=camera_ips, data=data)
+                await mq.publish(camera_ip=camera_ips, data=data)
         except Exception as err:
             print(f"发送消息错误: {err}")
     print("结束输出监听")

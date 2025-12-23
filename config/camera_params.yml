@@ -7,7 +7,7 @@ global:
     ExposureTime: 5000
     GainAuto: "Off"
     Gain: 0
-    GevSCPD: 400
+#    GevSCPD: 40032458
   custom:
     to_ping: True  # 是否ping
     host_ip: null     # host ip
@@ -23,54 +23,62 @@ global:
 
 192.168.4.101:
   native:
+    GevSCPD: 32458
 
   custom:
-    host_ip: 192.168.4.223
+    host_ip: 192.168.4.222
 
 192.168.4.102:
   native:
+    GevSCPD: 32458
 
   custom:
     host_ip: 192.168.4.223
 
 192.168.4.105:
   native:
-
-  custom:
-    host_ip: 192.168.4.222
-
-192.168.4.111:
-  native:
+    GevSCPD: 32458
 
   custom:
     host_ip: 192.168.4.223
 
-192.168.4.112:
+192.168.4.99:
   native:
+    GevSCPD: 154378
+
+  custom:
+    host_ip: 192.168.4.222
+
+192.168.4.109:
+  native:
+    GevSCPD: 32458
 
   custom:
     host_ip: 192.168.4.222
 
 192.168.4.113:
   native:
+    GevSCPD: 32458
 
   custom:
     host_ip: 192.168.4.222
 
 192.168.4.114:
   native:
+    GevSCPD: 32458
 
   custom:
     host_ip: 192.168.4.223
 
 192.168.4.115:
   native:
-
+    GevSCPD: 32458
   custom:
-    host_ip: 192.168.4.222
+    host_ip: 192.168.4.223
 
 192.168.4.116:
   native:
+    GevSCPD: 32458
 
   custom:
     host_ip: 192.168.4.222

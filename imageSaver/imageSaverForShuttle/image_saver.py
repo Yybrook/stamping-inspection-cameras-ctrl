@@ -164,14 +164,16 @@ class ImageSaver:
                 break
 
             # 接收到新的 part_counter
-            if part_counter is not None:
-                try:
-                    # 获取 program_id
-                    program_id_t, program_id = await self.redis.get_latest_program_id(press_line=self.press_line)
-                    # 放入队列
-                    await self.queue.put((program_id, part_counter))
-                except Exception as err:
-                    _logger.exception(f"{self.identity} handle part counter error: {err}")
+            if part_counter is None:
+                continue
+
+            try:
+                # 获取 program_id
+                program_id_t, program_id = await self.redis.get_latest_program_id(press_line=self.press_line)
+                # 放入队列
+                await self.queue.put((program_id, part_counter))
+            except Exception as err:
+                _logger.exception(f"{self.identity} handle part counter error: {err}")
 
         _logger.info(f"{self.identity} subscribe_part_count() ended")
 

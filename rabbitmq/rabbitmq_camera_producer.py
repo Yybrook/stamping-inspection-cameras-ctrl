@@ -46,7 +46,7 @@ class RabbitmqCameraProducer:
             self.connection = None
             _logger.info(f"{self.identity} disconnected successfully")
 
-    async def publish(self, camera_ips: typing.Optional[list[str]], data: str):
+    async def publish(self, camera_ip: typing.Union[list[str], str, None], data: str):
         # 连接
         await self.connect()
         # 生成消息
@@ -55,16 +55,22 @@ class RabbitmqCameraProducer:
             reply_to=self.response_queue.name
         )
         # 广播消息
-        if not camera_ips:
+        if not camera_ip:
             routing_key = self.broadcast_routing_key
             await self.exchange.publish(msg, routing_key=routing_key)
             _logger.debug(f"{self.identity} publish to {routing_key}: {data}")
         # p2p消息
+        elif isinstance(camera_ip, str):
+            ip = camera_ip
+            routing_key = self.p2p_routing_key(ip)
+            await self.exchange.publish(msg, routing_key=routing_key)
+            _logger.debug(f"{self.identity} publish to {routing_key}: {data}")
+        # 批量p2p消息
         else:
-            for ip in camera_ips:
+            for ip in camera_ip:
                 routing_key = self.p2p_routing_key(ip)
                 await self.exchange.publish(msg, routing_key=routing_key)
-            _logger.debug(f"{self.identity} publish to {camera_ips}: {data}")
+            _logger.debug(f"{self.identity} batch publish to {camera_ip}: {data}")
 
     async def listener(self):
         # 连接
@@ -145,7 +151,7 @@ if __name__ == "__main__":
                     break
                 camera_ips, cmds = input_cmds
                 data = json.dumps(cmds)
-                await mq.publish(camera_ips=camera_ips, data=data)
+                await mq.publish(camera_ip=camera_ips, data=data)
             except Exception as err:
                 print(f"发送消息错误: {err}")
         print("结束输出监听")

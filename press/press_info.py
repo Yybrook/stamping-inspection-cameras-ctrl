@@ -138,7 +138,7 @@ class PressInfo:
             running_status = await self._read_running_status()
 
             # running_status 变化 -> 接入redis
-            if running_status != self.running_status:
+            if self.running_status is None or running_status.is_running() != self.running_status.is_running():
                 await self.redis.set_running_status(
                     running_status=running_status.is_running(),
                     press_line=self.press_line

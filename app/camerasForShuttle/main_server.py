@@ -103,9 +103,22 @@ def init_logger():
     logger.addHandler(file_handler)
 
     # 设置特定日志等级
-    # logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
-    # logging.getLogger('apscheduler.scheduler').setLevel(logging.WARNING)
-    # logging.getLogger('snap7.client').setLevel(logging.WARNING)
+    # logging.getLogger('aio_pika.robust_connection').setLevel(logging.WARNING)
+    # logging.getLogger('aiormq.connection').setLevel(logging.WARNING)
+    # logging.getLogger('aio_pika.connection').setLevel(logging.WARNING)
+    # logging.getLogger('aio_pika.channel').setLevel(logging.WARNING)
+    # logging.getLogger('aio_pika.queue').setLevel(logging.WARNING)
+    # logging.getLogger('aio_pika.exchange').setLevel(logging.WARNING)
+    # logging.getLogger('plc.plc.plc_operator').setLevel(logging.WARNING)
+    # logging.getLogger('modbus.modbus.async_modbus_tcp_client').setLevel(logging.WARNING)
+    # logging.getLogger('pymodbus.logging').setLevel(logging.WARNING)
+    # logging.getLogger('rabbitmq.rabbitmq_camera_producer').setLevel(logging.WARNING)
+    # logging.getLogger('camera.cameraForShuttle.camera_ctrl').setLevel(logging.WARNING)
+
+
+
+
+    logging.getLogger('snap7.client').setLevel(logging.WARNING)
 
 
 if __name__ == "__main__":

@@ -119,7 +119,7 @@
     </table>
 </div>
 
-<script src="/statics/app.js"></script>
+<script src="/static/app.js"></script>
 <script>
 
     // 获取完整 path -> /pressInfo/5-100
@@ -147,13 +147,13 @@
     const lightEnableTtlEl = document.getElementById("light_enable_ttl");
 
     const runningStatusMap = {
-        "1": {label: "运行", color: "green"},
-        "0": {label: "停止", color: "orange"},
+        true: {label: "运行", color: "green"},
+        false: {label: "停止", color: "orange"},
     };
 
     const lightEnableMap = {
-        "1": {label: "enable", color: "green"},
-        "0": {label: "disable", color: "orange"},
+        true: {label: "enable", color: "green"},
+        false: {label: "disable", color: "orange"},
     };
 
 

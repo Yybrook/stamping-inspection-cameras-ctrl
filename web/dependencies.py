@@ -20,3 +20,11 @@ async def get_redis():
         _redis = await AsyncRedisDB.create(**redis_params, ping=True)
 
     return _redis
+
+async def close_redis():
+    global _redis
+
+    if _redis is not None:
+        # 假设 Redis 配置在 app_config 中
+        _redis.aclose()
+        _redis = None

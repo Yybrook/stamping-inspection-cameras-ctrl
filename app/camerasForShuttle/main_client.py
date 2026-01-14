@@ -5,7 +5,7 @@ import datetime
 import multiprocessing as mp
 import signal
 import logging
-from logging.handlers import TimedRotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler, QueueHandler, QueueListener
 
 from camera import MyCameraForShuttle
 from config import config
@@ -32,6 +32,23 @@ parts_info_path = config.PARTS_INFO_PATH
 
 # 子进程列表
 processes: dict[str, mp.Process] = dict()
+
+
+class IPFilter(logging.Filter):
+    def __init__(self, ip: str):
+        super().__init__()
+        self.ip = ip
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.camera_ip = self.ip
+        return True
+
+
+class DefaultIPFilter(logging.Filter):
+    def filter(self, record):
+        if not hasattr(record, "camera_ip"):
+            record.camera_ip = "MAIN"
+        return True
 
 
 async def run_camera(ip: str):
@@ -66,13 +83,45 @@ async def run_camera(ip: str):
         _logger.info(f"[Main] camera[{ip}] process ended")
 
 
-def run_camera_in_process(ip: str):
+def run_camera_in_process(ip: str, log_queue: mp.Queue):
     """子进程入口"""
-    init_logger()
+    # 创建logger对象
+    logger = logging.getLogger()
+    # 设置全局最低等级
+    logger.setLevel(logging.DEBUG)
+
+    # 防止重复 handler
+    logger.handlers.clear()
+
+    # 子进程：使用 QueueHandler 发送日志到主进程
+    # === Queue Handler ===
+    queue_handler = QueueHandler(log_queue)
+    queue_handler.addFilter(IPFilter(ip))
+    logger.addHandler(queue_handler)
+
+    logging.getLogger('aio_pika.robust_connection').setLevel(logging.WARNING)
+    logging.getLogger('aiormq.connection').setLevel(logging.WARNING)
+    logging.getLogger('aio_pika.connection').setLevel(logging.WARNING)
+    logging.getLogger('aio_pika.channel').setLevel(logging.WARNING)
+    logging.getLogger('aio_pika.queue').setLevel(logging.WARNING)
+    logging.getLogger('aio_pika.exchange').setLevel(logging.WARNING)
+
+    logging.getLogger('asyncio').setLevel(logging.INFO)
+    logging.getLogger('hikrobot_camera.hikrobot_camera').setLevel(logging.INFO)
+
+    # 异步运行
     asyncio.run(run_camera(ip))
+
 
 def main():
     """主控程序：为每个相机启动独立进程"""
+    console_handler, file_handler = init_logger()
+
+    # 创建日志队列和监听器
+    log_queue = mp.Queue()
+    listener = QueueListener(log_queue, console_handler, file_handler)
+    listener.start()
+
     try:
         # 相机 IP 列表
         camera_ips = MyCameraForShuttle.load_registered_cameras(path=parts_info_path)
@@ -80,8 +129,8 @@ def main():
         for ip in camera_ips:
             p = mp.Process(
                 target=run_camera_in_process,
-                kwargs={"ip": ip},
-                daemon=True,      # 去掉守护进程，使子进程执行finally
+                kwargs={"ip": ip, "log_queue": log_queue},
+                daemon=False,      # 去掉守护进程，使子进程执行finally
             )
             p.start()
             processes[ip] = p
@@ -113,18 +162,23 @@ def main():
                 break
 
         _logger.info(f"[Main] cameras client for shuttle ended")
+        listener.stop()
 
 
 def init_logger():
     # 创建logger对象
     logger = logging.getLogger()
-    # 设置全局最低等级（让所有handler能接收到）
+    # 设置全局最低等级
     logger.setLevel(logging.DEBUG)
+    # 防止重复 handler
+    logger.handlers.clear()
 
-    # === 控制台 Handler（只显示 WARNING 及以上） ===
+    # 主进程：创建控制台和文件 handlers
+    # === 控制台 Handler ===
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    console_handler.setLevel(logging.DEBUG)
+    console_handler.addFilter(DefaultIPFilter())
+    console_formatter = logging.Formatter("%(asctime)s - [%(camera_ip)s|%(process)d] - %(name)s - %(levelname)s - %(message)s")
     console_handler.setFormatter(console_formatter)
 
     # === 文件 Handler（每天切割，保留 7 天，记录 INFO 及以上）===
@@ -133,7 +187,6 @@ def init_logger():
     # 创建log目录
     log_dir = os.path.dirname(log_path)
     os.makedirs(log_dir, exist_ok=True)
-
     file_handler = TimedRotatingFileHandler(
         filename=log_path,  # 文件名（会自动生成备份，如 app.log.2025-07-10）
         when="midnight",  # 每天午夜切割一次
@@ -142,24 +195,25 @@ def init_logger():
         encoding="utf-8",
         utc=False  # 根据本地时间切割；如需使用 UTC，设为 True
     )
-    file_handler.setLevel(logging.INFO)
-    file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.addFilter(DefaultIPFilter())
+    file_formatter = logging.Formatter("%(asctime)s - [%(camera_ip)s|%(process)d] - %(name)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(file_formatter)
 
-    # 添加 handler 到 logger
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
-
     # 设置特定日志等级
+    # logging.getLogger('aio_pika.robust_connection').setLevel(logging.WARNING)
+    # logging.getLogger('aiormq.connection').setLevel(logging.WARNING)
+    # logging.getLogger('aio_pika.connection').setLevel(logging.WARNING)
+    # logging.getLogger('aio_pika.channel').setLevel(logging.WARNING)
+    # logging.getLogger('aio_pika.queue').setLevel(logging.WARNING)
+    # logging.getLogger('aio_pika.exchange').setLevel(logging.WARNING)
     # logging.getLogger('apscheduler.executors.default').setLevel(logging.WARNING)
     # logging.getLogger('apscheduler.scheduler').setLevel(logging.WARNING)
     # logging.getLogger('snap7.client').setLevel(logging.WARNING)
 
+    return console_handler, file_handler
+
 
 if __name__ == "__main__":
     # mp.set_start_method("spawn")  # Windows 需要 spawn
-
-    # 初始化 logger
-    init_logger()
-    # 运行
     main()

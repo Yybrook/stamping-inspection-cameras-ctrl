@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>系统导航页</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      margin: 0;
+      padding-top: 60px;
+    }
+
+    h1 {
+      margin-bottom: 40px;
+      color: #333;
+    }
+
+    .nav-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .nav-link {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #4a90e2;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background-color 0.3s;
+      font-size: 18px;
+      text-align: center;
+      min-width: 240px;
+    }
+
+    .nav-link:hover {
+      background-color: #357abd;
+    }
+  </style>
+</head>
+<body>
+  <h1>系统导航</h1>
+  <div class="nav-container">
+    <a class="nav-link" href="/pressInfo/5-100">5-100 压机实时信息</a>
+    <a class="nav-link" href="/picturesForShuttle/5-100">5-100  穿梭小车相机图片回放</a>
+
+  </div>
+</body>
+</html>

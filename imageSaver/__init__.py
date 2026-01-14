@@ -1,1 +1,2 @@
 from .imageSaverForShuttle.image_saver import ImageSaver as ImageSaverForShuttle
+from .imageSaverForShuttle.models import ShuttleImage as ImageModelForShuttle

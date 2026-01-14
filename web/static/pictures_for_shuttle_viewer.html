@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>穿梭小车相机图片回放</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 28px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            max-width: 3000px;
+            margin: 0 auto;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .form-row label {
+            font-size: 14px;
+        }
+
+        .form-row input {
+            padding: 4px 8px;
+            width: 80px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .form-row button {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 6px;
+            background: #2563eb;
+            color: #fff;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .form-row button:hover {
+            background: #1e4bbb;
+        }
+
+        #image-wrapper {
+            margin-top: 20px;
+        }
+
+        /* 图片+Meta容器 */
+        .image-box {
+            border-top: 1px solid #ddd;
+            padding-top: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .image-meta-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            overflow-x: auto;
+            align-items: flex-start;
+        }
+
+        .image-container {
+            flex-shrink: 0;
+            overflow: hidden;
+            position: relative;
+            cursor: grab;
+            max-width: 100%;
+        }
+
+        .image-container img {
+            display: block;
+            max-width: 1000px;
+            max-height: 600px;
+            border-radius: 6px;
+            transform-origin: 0 0;
+            transition: transform 0.05s ease-out;
+        }
+
+        .meta {
+            font-size: 13px;
+            min-width: 250px;
+            flex-grow: 1;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 120px auto;
+            gap: 4px 8px;
+        }
+
+        @media (max-width: 600px) {
+            .meta-grid {
+                grid-template-columns: 100px auto;
+                font-size: 12px;
+            }
+        }
+
+        canvas {
+            width: 100%;
+            height: 150px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-top: 4px;
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<h1>穿梭小车相机图片回放</h1>
+<div class="card">
+    <div class="form-row">
+        <label>年 <input id="year" type="number" value="2026"></label>
+        <label>月 <input id="month" type="number" min="1" max="12"></label>
+        <label>日 <input id="day" type="number" min="1" max="31"></label>
+        <label>程序号 <input id="part_id" type="number"></label>
+        <label>零件 Count <input id="part_count" type="number"></label>
+        <label>相机UID <input id="camera_uid" type="text"></label>
+    </div>
+    <div class="form-row">
+        <button onclick="loadFirst()">First</button>
+        <button onclick="loadLast()">Last</button>
+        <button onclick="loadSpecified()">加载</button>
+        <button onclick="loadPrev()">上一个</button>
+        <button onclick="loadNext()">下一个</button>
+    </div>
+    <div id="image-wrapper"></div>
+</div>
+
+<script>
+    const wrap = document.getElementById("image-wrapper");
+    const pressLine = window.location.pathname.split("/").pop();
+    let current = {};
+
+    function buildUrl(type, y, m, d, pid, pc, uid) {
+        return type === "count"
+            ? `/picturesForShuttle/${pressLine}/${y}/${m}/${d}/${pid}/${pc}/count`
+            : `/picturesForShuttle/${pressLine}/${y}/${m}/${d}/${pid}/${pc}/${uid}`;
+    }
+
+    async function fetchJson(url) {
+        return (await fetch(url)).json();
+    }
+
+    async function loadSpecified() {
+        const y = +year.value, m = +month.value, d = +day.value, pid = +part_id.value, pc = +part_count.value, uid = camera_uid.value;
+        update(await fetchJson(buildUrl("image", y, m, d, pid, pc, uid)));
+    }
+
+    function loadPrev() {
+        if (current.previous > 0) {
+            part_count.value = current.previous;
+            loadSpecified();
+        }
+    }
+
+    function loadNext() {
+        if (current.next > 0) {
+            part_count.value = current.next;
+            loadSpecified();
+        }
+    }
+
+    async function loadFirst() {
+        const y = +year.value, m = +month.value, d = +day.value, pid = +part_id.value;
+        part_count.value = (await fetchJson(buildUrl("count", y, m, d, pid, "first"))).part_count;
+    }
+
+    async function loadLast() {
+        const y = +year.value, m = +month.value, d = +day.value, pid = +part_id.value;
+        part_count.value = (await fetchJson(buildUrl("count", y, m, d, pid, "last"))).part_count;
+    }
+
+    function update(data) {
+        current = data;
+        render(data);
+    }
+
+    function render(data) {
+        wrap.innerHTML = "";
+        const box = document.createElement("div");
+        box.className = "image-box";
+        const wrapper = document.createElement("div");
+        wrapper.className = "image-meta-wrapper";
+
+        // 图片
+        const imgBox = document.createElement("div");
+        imgBox.className = "image-container";
+        const img = document.createElement("img");
+        img.src = data.image_url;
+        imgBox.appendChild(img);
+        makeImageInteractive(img);
+        wrapper.appendChild(imgBox);
+
+        // Meta
+        const metaDiv = document.createElement("div");
+        metaDiv.className = "meta";
+        const m = data.image_info;
+        metaDiv.innerHTML = `
+    <div class="meta-grid">
+<!--        <div>Database ID:</div><div>${m.id}</div>-->
+        <div>Part ID:</div><div>${m.part_id}</div>
+        <div>Part Count:</div><div>${m.part_count}</div>
+        <div>Camera IP:</div><div>${m.camera_ip}</div>
+        <div>Camera UID:</div><div>${m.camera_user_id}</div>
+        <div>Frame Num:</div><div>${m.frame_num}</div>
+        <div>Frame Size:</div><div>${m.frame_width}×${m.frame_height}</div>
+        <div>Time(onShuttle):</div><div>${formatTimestamp(m.shuttle_has_part_t)}</div>
+        <div>Frame Delay:</div><div>${m.frame_t - m.shuttle_has_part_t} ms</div>
+        <div>Saved Delay:</div><div>${m.saved_t - m.frame_t} ms</div>
+    </div>`;
+        wrapper.appendChild(metaDiv);
+        box.appendChild(wrapper);
+
+        // 图表
+        const frameTitle = document.createElement("div");
+        frameTitle.style.fontWeight = "600";
+        frameTitle.style.fontSize = "12px";
+        frameTitle.style.marginTop = "4px";
+        frameTitle.textContent = "Frame Delay";
+
+        const savedTitle = document.createElement("div");
+        savedTitle.style.fontWeight = "600";
+        savedTitle.style.fontSize = "12px";
+        savedTitle.style.marginTop = "4px";
+        savedTitle.textContent = "Saved Delay";
+
+        const frameCanvas = document.createElement("canvas");
+        const savedCanvas = document.createElement("canvas");
+        const labels = Object.keys(data.images_time);
+        const frameDelay = labels.map(k => data.images_time[k].frame_t - data.images_time[k].shuttle_has_part_t);
+        const saveDelay = labels.map(k => data.images_time[k].saved_t - data.images_time[k].frame_t);
+        const idx = labels.indexOf(String(data.part_count));
+
+        box.appendChild(frameTitle);
+        box.appendChild(frameCanvas);
+        box.appendChild(savedTitle);
+        box.appendChild(savedCanvas);
+
+        requestAnimationFrame(() => {
+            drawLineChart(frameCanvas, labels, frameDelay, idx, "#3498db");
+            drawLineChart(savedCanvas, labels, saveDelay, idx, "#2ecc71");
+        });
+
+        wrap.appendChild(box);
+    }
+
+    // 缩放拖拽
+    function makeImageInteractive(img) {
+        let scale = 1, originX = 0, originY = 0;
+        let startX = 0, startY = 0;
+        let dragging = false;
+
+        img.addEventListener("wheel", e => {
+            e.preventDefault();
+            const rect = img.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const offsetY = e.clientY - rect.top;
+
+            // 缩放比例
+            const delta = e.deltaY < 0 ? 1.1 : 0.9;
+            const newScale = scale * delta;
+
+            // 计算新的 origin 使缩放以鼠标为中心
+            originX = (offsetX + originX) - (offsetX + originX) * (newScale / scale);
+            originY = (offsetY + originY) - (offsetY + originY) * (newScale / scale);
+
+            scale = newScale;
+            updateTransform();
+        });
+
+        img.addEventListener("mousedown", e => {
+            e.preventDefault();
+            dragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            img.style.cursor = "grabbing";
+        });
+
+        window.addEventListener("mousemove", e => {
+            if (!dragging) return;
+            e.preventDefault();
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            startX = e.clientX;
+            startY = e.clientY;
+            originX += dx;
+            originY += dy;
+            updateTransform();
+        });
+
+        window.addEventListener("mouseup", e => {
+            if (!dragging) return;
+            dragging = false;
+            img.style.cursor = "grab";
+        });
+
+        function updateTransform() {
+            img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+        }
+    }
+
+    // 折线图
+    function drawLineChart(canvas, labels, data, highlightIndex, color) {
+        if (!labels.length) return;
+        const ctx = canvas.getContext("2d"), w = canvas.width = canvas.clientWidth, h = canvas.height = canvas.clientHeight;
+        ctx.clearRect(0, 0, w, h);
+        const pad = 40, maxVal = Math.max(...data), minVal = Math.min(...data);
+        const x = i => pad + i * (w - 2 * pad) / (labels.length - 1);
+        const y = v => h - pad - (v - minVal) / (maxVal - minVal + 1e-6) * (h - 2 * pad);
+
+        // 坐标轴
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad, pad);
+        ctx.lineTo(pad, h - pad);
+        ctx.lineTo(w - pad, h - pad);
+        ctx.stroke();
+
+        // y轴
+        ctx.fillStyle = "#333";
+        ctx.font = "12px Arial";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        for (let i = 0; i <= 5; i++) {
+            const val = minVal + i * (maxVal - minVal) / 5, py = y(val);
+            ctx.beginPath();
+            ctx.moveTo(pad - 5, py);
+            ctx.lineTo(pad, py);
+            ctx.stroke();
+            ctx.fillText(Math.round(val), pad - 8, py);
+        }
+
+        // x轴
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        labels.forEach((lbl, i) => {
+            const px = x(i);
+            ctx.beginPath();
+            ctx.moveTo(px, h - pad);
+            ctx.lineTo(px, h - pad + 5);
+            ctx.stroke();
+            ctx.fillText(lbl, px, h - pad + 8);
+        });
+
+        // 数据线
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        data.forEach((v, i) => i === 0 ? ctx.moveTo(x(i), y(v)) : ctx.lineTo(x(i), y(v)));
+        ctx.stroke();
+        data.forEach((v, i) => {
+            ctx.beginPath();
+            ctx.fillStyle = i === highlightIndex ? "#e74c3c" : color;
+            ctx.arc(x(i), y(v), i === highlightIndex ? 4 : 2, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+    }
+
+    // 格式化时间
+    function formatTimestamp(ts) {
+        return new Date(ts).toLocaleString();
+    }
+</script>
+
+</body>
+</html>

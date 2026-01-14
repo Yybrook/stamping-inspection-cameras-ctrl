@@ -26,18 +26,18 @@ UDP_MULTICAST_INTERFACE_IP = "192.168.4.223"
 UDP_TTL = 2
 
 # mssql
-MSSQL_HOST = "127.0.0.1"
-MSSQL_PORT = 1433
-MSSQL_USER = "sa"
-MSSQL_PWD = "Abc12345"
-MSSQL_DB = "imageInfo"
-MSSQL_DRIVER = "ODBC Driver 18 for SQL Server"
 # MSSQL_HOST = "127.0.0.1"
 # MSSQL_PORT = 1433
 # MSSQL_USER = "sa"
-# MSSQL_PWD = "123"
+# MSSQL_PWD = "Abc12345"
 # MSSQL_DB = "imageInfo"
-# MSSQL_DRIVER = "ODBC Driver 11 for SQL Server"
+# MSSQL_DRIVER = "ODBC Driver 18 for SQL Server"
+MSSQL_HOST = "127.0.0.1"
+MSSQL_PORT = 1433
+MSSQL_USER = "sa"
+MSSQL_PWD = "123"
+MSSQL_DB = "imageInfo"
+MSSQL_DRIVER = "ODBC Driver 11 for SQL Server"
 
 # 根目录
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -27,21 +27,21 @@ async def cancel_tasks(tasks: list[asyncio.Task]):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 连接 redis
-    # await get_redis()
+    await get_redis()
 
     # 连接数据库连接
     await Tortoise.init(config=TORTOISE_ORM)
 
-    # tasks = list()
-    # tasks.append(asyncio.create_task(press_info_viewer.subscribe_program_id(press_line="5-100")))
-    # tasks.append(asyncio.create_task(press_info_viewer.subscribe_running_status(press_line="5-100")))
-    # tasks.append(asyncio.create_task(press_info_viewer.subscribe_part_counter(press_line="5-100")))
-    # tasks.append(asyncio.create_task(press_info_viewer.get_light_enable(press_line="5-100")))
+    tasks = list()
+    tasks.append(asyncio.create_task(press_info_viewer.subscribe_program_id(press_line="5-100")))
+    tasks.append(asyncio.create_task(press_info_viewer.subscribe_running_status(press_line="5-100")))
+    tasks.append(asyncio.create_task(press_info_viewer.subscribe_part_counter(press_line="5-100")))
+    tasks.append(asyncio.create_task(press_info_viewer.get_light_enable(press_line="5-100")))
 
     yield
 
-    # await cancel_tasks(tasks)
-    # await close_redis()
+    await cancel_tasks(tasks)
+    await close_redis()
 
 app = FastAPI(lifespan=lifespan)
 

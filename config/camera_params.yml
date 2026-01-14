@@ -4,7 +4,7 @@ global:
     TriggerMode: "On"
     TriggerSource: "Software"
     ExposureAuto: "Off"
-    ExposureTime: 5000
+    ExposureTime: 4000
     GainAuto: "Off"
     Gain: 0
 #    GevSCPD: 40032458
@@ -51,6 +51,7 @@ global:
 
 192.168.4.105:
   native:
+#    ExposureTime: 1500
     GevSCPD: 32458
 
   custom:
@@ -58,6 +59,7 @@ global:
 
 192.168.4.106:
   native:
+#    ExposureTime: 2000
     GevSCPD: 32458
 
   custom:
@@ -65,6 +67,7 @@ global:
 
 192.168.4.107:
   native:
+#    ExposureTime: 2000
     GevSCPD: 32458
   custom:
     host_ip: 192.168.4.222
@@ -78,7 +81,7 @@ global:
 
 192.168.4.199:
   native:
-    ExposureTime: 1500
+#    ExposureTime: 1500
     GevSCPD: 154378
 
   custom:

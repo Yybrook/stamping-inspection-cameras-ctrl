@@ -61,7 +61,6 @@ def launch_script(script_rel_path, base_dir):
 
 def run_all_scripts(scripts):
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    print(base_dir)
     processes = []
 
     log("🚀 正在启动所有脚本...")
